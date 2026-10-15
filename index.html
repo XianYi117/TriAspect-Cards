@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>元素卡牌對戰 v1.0.2｜潮汐・森境・燼火</title>
+<style>
+:root{--bg:#0b0f14;--panel:#141a22;--border:#2a3441;--text:#e8eef5;--muted:#8b9aab;--blue:#4dabf7;--green:#51cf66;--red:#ff6b6b;--gold:#fcc419;--gray:#adb5bd}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.hidden{display:none!important}
+button{font-family:inherit;cursor:pointer;border:1px solid var(--border);background:#1c2530;color:var(--text);border-radius:8px;padding:8px 14px;font-size:13px;transition:.15s}
+button:hover:not(:disabled){background:#273445}
+button:disabled{opacity:.35;cursor:not-allowed}
+button.primary{background:#2b8a3e;border-color:#37b24d}
+button.primary:hover:not(:disabled){background:#37b24d}
+button.danger{background:#c92a2a;border-color:#ff6b6b}
+button.warn{background:#e67700;border-color:#fcc419}
+button.blue{border-color:var(--blue);color:var(--blue)}
+button.green{border-color:var(--green);color:var(--green)}
+button.red{border-color:var(--red);color:var(--red)}
+#start{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;text-align:center}
+#start h1{font-size:26px;background:linear-gradient(90deg,var(--blue),var(--green),var(--red));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+#start p{color:var(--muted);max-width:520px;line-height:1.7;font-size:14px}
+.factions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.wrap{max-width:1280px;margin:0 auto;padding:8px;display:flex;flex-direction:column;gap:8px;min-height:100vh}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.stats span{background:#1c2530;padding:3px 10px;border-radius:6px;font-size:12px}
+.stats strong{color:var(--gold)}
+.life{color:var(--red)!important}
+.zone-label{font-size:11px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between}
+.cards{display:flex;gap:6px;flex-wrap:wrap;min-height:88px;align-items:flex-start}
+.field{border:1px dashed var(--border);border-radius:8px;padding:4px;min-height:100px;background:#0d1218}
+.card{width:76px;height:106px;border-radius:7px;border:2px solid var(--border);position:relative;cursor:pointer;overflow:hidden;flex-shrink:0;transition:transform .12s,box-shadow .12s;background:#1a222d;user-select:none}
+.card:hover{transform:translateY(-3px)}
+.card.sel{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold)}
+.card.back{background:linear-gradient(145deg,#15202b,#0d1520);display:flex;align-items:center;justify-content:center;font-size:22px;color:#3d5a80;border-color:#1e3a5f}
+.card img{width:100%;height:100%;object-fit:cover;pointer-events:none}
+.card .face{padding:4px;height:100%;display:flex;flex-direction:column;font-size:10px;line-height:1.2}
+.card .face .nm{font-weight:700;font-size:11px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .face .fx{color:var(--muted);font-size:9px;flex:1;overflow:hidden}
+.card .cost{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#000;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.card .atk{position:absolute;bottom:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.card .race{position:absolute;bottom:2px;right:2px;width:18px;height:18px;border-radius:50%;background:#222;color:#ccc;font-size:10px;display:flex;align-items:center;justify-content:center}
+.card.col-R{border-color:#c92a2a}.card.col-G{border-color:#2b8a3e}.card.col-B{border-color:#1971c2}
+.card.energy{opacity:.85;border-style:dashed}
+.log{height:110px;overflow-y:auto;font-size:12px;font-family:ui-monospace,monospace;background:#0a0e13;border-radius:8px;padding:8px;border:1px solid var(--border)}
+.log div{margin-bottom:2px}.log .sys{color:var(--muted)}.log .p1{color:var(--green)}.log .p2{color:var(--red)}.log .fx{color:var(--blue)}.log .bat{color:var(--gold)}
+.phase-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:6px 0}
+.phase-bar .ph{padding:4px 10px;border-radius:20px;font-size:12px;background:#1c2530;color:var(--muted)}
+.phase-bar .ph.active{background:#1c3a2a;color:var(--green);font-weight:700}
+.phase-bar .ph.done{color:#495057}
+.ctrl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding-top:6px}
+.sel-info{font-size:12px;color:var(--gold);min-height:18px}
+.energy-bar span{display:inline-block;padding:2px 8px;border-radius:4px;margin-right:4px;font-size:12px}
+.energy-bar .r{border-left:3px solid var(--red)}.energy-bar .g{border-left:3px solid var(--green)}.energy-bar .b{border-left:3px solid var(--blue)}.energy-bar .x{border-left:3px solid var(--gray)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:none;align-items:center;justify-content:center}
+.modal.show{display:flex}
+.modal-box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:440px;width:92%}
+.modal-box h3{margin-bottom:12px}
+.modal-box .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+</style>
+</head>
+<body>
+<div id="start">
+  <h1>元素卡牌對戰 v1.0.2</h1>
+  <p>一組牌組 20 張・生命牌 6 張・每回合同時召喚 1 隻角色<br>
+  公開支付能量 → 發動效果（先攻可出招，後攻可干擾）→ 比較戰鬥力結算傷害<br>
+  卡牌可作：召喚用 / 效果用 / 能量用（依右上顏色）</p>
+  <div class="factions">
+    <button class="blue" onclick="boot('B')">潮汐藍</button>
+    <button class="green" onclick="boot('G')">森境綠</button>
+    <button class="red" onclick="boot('R')">燼火紅</button>
+    <button onclick="boot('MIX')">混合牌組</button>
+  </div>
+  <p style="font-size:12px;color:var(--muted)">完整卡圖請使用本地 artifacts/game 版本。線上版使用 CSS 卡面，規則相同。</p>
+</div>
+<div class="wrap hidden" id="game">
+  <div class="panel">
+    <div class="zone-label"><span>敵方</span><span id="turnTag">—</span></div>
+    <div class="row stats">
+      <span>生命牌 <strong class="life" id="eLife">6</strong></span>
+      <span>牌庫 <strong id="eDeck">0</strong></span>
+      <span>棄牌 <strong id="eDisc">0</strong></span>
+      <span>手牌 <strong id="eHandN">0</strong></span>
+      <span class="energy-bar" id="eEn">R0 G0 B0 X0</span>
+    </div>
+    <div class="zone-label">敵方召喚／戰場</div>
+    <div class="cards field" id="eField"></div>
+    <div class="zone-label">敵方手牌（牌背）</div>
+    <div class="cards" id="eHand"></div>
+  </div>
+  <div class="panel">
+    <div class="phase-bar" id="phases">
+      <span class="ph" data-p="draw">①抽牌</span>
+      <span class="ph" data-p="summon">②召喚</span>
+      <span class="ph" data-p="pay">③支付能量</span>
+      <span class="ph" data-p="effect">④發動效果</span>
+      <span class="ph" data-p="battle">⑤戰鬥結算</span>
+      <span class="ph" data-p="clean">⑥回合結束</span>
+    </div>
+    <div class="log" id="log"></div>
+  </div>
+  <div class="panel">
+    <div class="zone-label">
+      <span>我方</span>
+      <span class="energy-bar">
+        <span class="r">紅 <strong id="pR">0</strong></span>
+        <span class="g">綠 <strong id="pG">0</strong></span>
+        <span class="b">藍 <strong id="pB">0</strong></span>
+        <span class="x">灰 <strong id="pX">0</strong></span>
+      </span>
+    </div>
+    <div class="row stats">
+      <span>生命牌 <strong class="life" id="pLife">6</strong></span>
+      <span>牌庫 <strong id="pDeck">0</strong></span>
+      <span>棄牌 <strong id="pDisc">0</strong></span>
+      <span>手牌 <strong id="pHandN">0</strong></span>
+    </div>
+    <div class="zone-label">能量牌區 <small>（點手牌→轉能量）</small></div>
+    <div class="cards" id="pEnergy"></div>
+    <div class="zone-label">我方召喚／戰場</div>
+    <div class="cards field" id="pField"></div>
+    <div class="zone-label">我方手牌</div>
+    <div class="cards" id="pHand"></div>
+    <div class="sel-info" id="selInfo">請依當前階段操作</div>
+    <div class="ctrl">
+      <button id="btnEnergy" disabled onclick="actToEnergy()">轉為能量</button>
+      <button id="btnSummon" class="primary" disabled onclick="actSummon()">選擇召喚</button>
+      <button id="btnPay" class="warn" disabled onclick="actPay()">確認支付</button>
+      <button id="btnEffect" class="blue" disabled onclick="actEffect()">發動效果</button>
+      <button id="btnSkipFx" disabled onclick="actSkipEffect()">跳過效果</button>
+      <button id="btnBattle" class="danger" disabled onclick="actBattle()">進入戰鬥結算</button>
+      <button id="btnEnd" disabled onclick="actEndTurn()">結束回合</button>
+      <button onclick="location.reload()">重新開始</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h3 id="mTitle">選擇</h3>
+    <div id="mBody"></div>
+    <div class="btns">
+      <button onclick="closeModal()">取消</button>
+      <button class="primary" id="mOk">確認</button>
+    </div>
+  </div>
+</div>
+<script>
+const C = {
+B01:{id:'B01',n:'潮汐學徒',col:'B',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{R:1},txt:'我方單位攻擊力+1',fn:'buff',v:1},{t:'魔法',c:{G:1,X:1},txt:'從棄牌堆隨機抽1張',fn:'drawDisc',v:1}]},
+B02:{id:'B02',n:'霧影小妖',col:'B',cost:1,race:'妖',atk:2,fx:[{t:'干擾',c:{B:1},txt:'使對手消耗費用+1灰',fn:'costX',v:1}]},
+B03:{id:'B03',n:'泡沫幻魚',col:'B',cost:1,race:'幻',atk:3,fx:[{t:'立即',c:{B:1},txt:'將1張卡視為任意顏色',fn:'wild',v:1}]},
+B04:{id:'B04',n:'鏡湖幻靈',col:'B',cost:2,race:'幻',atk:2,fx:[{t:'魔法',c:{G:1,X:1},txt:'抽2張後放回1張',fn:'drawRet',v:2},{t:'干擾',c:{B:1,X:1},txt:'無效化對手效果',fn:'nullify',v:1}]},
+B05:{id:'B05',n:'冰晶妖王',col:'B',cost:3,race:'妖',atk:4,fx:[{t:'魔法',c:{G:1,X:1},txt:'複製場上效果(費2↓)',fn:'copy',v:2},{t:'魔法',c:{B:1,X:1},txt:'本次敵方傷害-2',fn:'redDmg',v:2}]},
+B06:{id:'B06',n:'潮汐守衛',col:'B',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{B:1},txt:'抽1張牌',fn:'draw',v:1}]},
+B07:{id:'B07',n:'泡沫海貝',col:'B',cost:1,race:'妖',atk:2,fx:[{t:'干擾',c:{X:1},txt:'對手選擇棄1張手牌',fn:'oppDisc',v:1}]},
+B08:{id:'B08',n:'泡沫精靈',col:'B',cost:1,race:'幻',atk:3,fx:[{t:'魔法',c:{B:1},txt:'對手1張手牌回庫並補1',fn:'bounce',v:1}]},
+B09:{id:'B09',n:'冰晶學徒',col:'B',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{X:1},txt:'敵方單位攻擊力-1',fn:'debuff',v:1}]},
+B10:{id:'B10',n:'深海斥候',col:'B',cost:1,race:'妖',atk:2,fx:[{t:'魔法',c:{B:1},txt:'從棄牌堆隨機抽1張',fn:'drawDisc',v:1}]},
+B11:{id:'B11',n:'鏡湖術士',col:'B',cost:2,race:'人',atk:3,fx:[{t:'魔法',c:{B:1,X:1},txt:'抽2張後放回1張',fn:'drawRet',v:2}]},
+B12:{id:'B12',n:'霧隱妖',col:'B',cost:2,race:'妖',atk:3,fx:[{t:'魔法',c:{R:1,X:1},txt:'對敵方玩家造成1傷害',fn:'dmgP',v:1}]},
+B13:{id:'B13',n:'幻影魚群',col:'B',cost:2,race:'幻',atk:3,fx:[{t:'魔法',c:{G:1},txt:'回復1點血量',fn:'heal',v:1},{t:'魔法',c:{R:1},txt:'敵方單位攻擊力-1',fn:'debuff',v:1}]},
+B14:{id:'B14',n:'寒冰使者',col:'B',cost:2,race:'人',atk:2,fx:[{t:'魔法',c:{R:1},txt:'我方單位攻擊力+1',fn:'buff',v:1}]},
+B15:{id:'B15',n:'水霧幻靈',col:'B',cost:2,race:'幻',atk:3,fx:[{t:'立即',c:{B:1,X:1},txt:'抽1張(不可被干擾)',fn:'draw',v:1}]},
+B16:{id:'B16',n:'冰晶女皇',col:'B',cost:3,race:'妖',atk:5,fx:[{t:'魔法',c:{B:1,X:1},txt:'本次敵方效果傷害-2',fn:'redDmg',v:2},{t:'干擾',c:{G:1,X:1},txt:'對手2張手牌回庫再抽1',fn:'mill',v:2}]},
+B17:{id:'B17',n:'深海幻龍',col:'B',cost:3,race:'幻',atk:4,fx:[{t:'魔法',c:{B:1,X:1},txt:'複製場上效果(費2↓)',fn:'copy',v:2},{t:'立即',c:{R:1},txt:'抽1張牌',fn:'draw',v:1}]},
+B18:{id:'B18',n:'潮汐領主',col:'B',cost:3,race:'人',atk:4,fx:[{t:'魔法',c:{B:1,X:1},txt:'抽2張牌',fn:'draw',v:2},{t:'立即',c:{X:2},txt:'禁止使用魔法效果',fn:'sealM',v:1}]},
+G01:{id:'G01',n:'森境護衛',col:'G',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{B:1},txt:'抽1張牌',fn:'draw',v:1}]},
+G02:{id:'G02',n:'苔角小妖',col:'G',cost:1,race:'妖',atk:2,fx:[{t:'干擾',c:{X:1},txt:'對手選擇棄1張手牌',fn:'oppDisc',v:1}]},
+G03:{id:'G03',n:'巡林獵手',col:'G',cost:2,race:'人',atk:4,fx:[{t:'魔法',c:{G:1},txt:'回復1點血量',fn:'heal',v:1},{t:'干擾',c:{B:1},txt:'無效魔法效果',fn:'nullM',v:1}]},
+G04:{id:'G04',n:'古木守望者',col:'G',cost:3,race:'人',atk:5,fx:[{t:'干擾',c:{B:1,X:1},txt:'對手需多花1藍能量',fn:'costB',v:1},{t:'魔法',c:{G:1,X:1},txt:'對手單位傷害-2',fn:'redAtk',v:2}]},
+G05:{id:'G05',n:'葉刃護衛',col:'G',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{B:1},txt:'敵方單位攻擊力-1',fn:'debuff',v:1}]},
+G06:{id:'G06',n:'藤蔓小妖',col:'G',cost:1,race:'妖',atk:2,fx:[{t:'干擾',c:{X:1},txt:'對手選擇棄1張手牌',fn:'oppDisc',v:1}]},
+G07:{id:'G07',n:'森靈幻影',col:'G',cost:1,race:'幻',atk:3,fx:[{t:'干擾',c:{G:1},txt:'無效魔法效果',fn:'nullM',v:1}]},
+G08:{id:'G08',n:'青木術士',col:'G',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{X:1},txt:'抽1張牌',fn:'draw',v:1}]},
+G09:{id:'G09',n:'翠葉斥候',col:'G',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{G:1},txt:'敵方單位攻擊力-1',fn:'debuff',v:1}]},
+G10:{id:'G10',n:'荊棘妖',col:'G',cost:1,race:'妖',atk:3,fx:[{t:'魔法',c:{G:1},txt:'回復1點血量',fn:'heal',v:1}]},
+G11:{id:'G11',n:'苔石巨人',col:'G',cost:2,race:'妖',atk:3,fx:[{t:'魔法',c:{G:1,X:1},txt:'敵方單位攻擊力-2',fn:'debuff',v:2}]},
+G12:{id:'G12',n:'綠影刺客',col:'G',cost:2,race:'幻',atk:3,fx:[{t:'干擾',c:{B:1,X:1},txt:'無效對手效果',fn:'nullify',v:1},{t:'魔法',c:{G:1,X:1},txt:'從棄牌堆隨機抽1張',fn:'drawDisc',v:1}]},
+G13:{id:'G13',n:'古樹守護',col:'G',cost:2,race:'人',atk:3,fx:[{t:'魔法',c:{B:1},txt:'抽1張牌',fn:'draw',v:1},{t:'魔法',c:{X:1},txt:'本次我方受傷-1',fn:'redIn',v:1}]},
+G14:{id:'G14',n:'蔓藤妖',col:'G',cost:2,race:'妖',atk:3,fx:[{t:'干擾',c:{X:1},txt:'對手消耗費用+1灰',fn:'costX',v:1},{t:'魔法',c:{G:1,X:1},txt:'從棄牌堆隨機抽1張',fn:'drawDisc',v:1}]},
+G15:{id:'G15',n:'翠葉幻靈',col:'G',cost:2,race:'幻',atk:4,fx:[{t:'魔法',c:{G:1},txt:'回復1點血量',fn:'heal',v:1}]},
+G16:{id:'G16',n:'森境領主',col:'G',cost:3,race:'人',atk:5,fx:[{t:'魔法',c:{B:1,X:1},txt:'敵方單位攻擊力-2',fn:'debuff',v:2},{t:'魔法',c:{G:1},txt:'回復1點血量',fn:'heal',v:1}]},
+G17:{id:'G17',n:'古妖王',col:'G',cost:3,race:'妖',atk:4,fx:[{t:'魔法',c:{G:1,X:2},txt:'回復2血、敵方ATK-1',fn:'healDeb',v:2},{t:'立即',c:{B:1},txt:'抽1張牌',fn:'draw',v:1}]},
+G18:{id:'G18',n:'世界樹幻影',col:'G',cost:3,race:'幻',atk:5,fx:[{t:'魔法',c:{G:1,X:1},txt:'對手隨機棄2張手牌',fn:'oppDisc',v:2},{t:'干擾',c:{X:2},txt:'無效化對手效果',fn:'nullify',v:1}]},
+R01:{id:'R01',n:'燼火劍士',col:'R',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{R:1},txt:'我方單位攻擊力+1',fn:'buff',v:1}]},
+R02:{id:'R02',n:'赤焰斥候',col:'R',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{X:1},txt:'抽1張牌',fn:'draw',v:1}]},
+R03:{id:'R03',n:'烈爪妖',col:'R',cost:1,race:'妖',atk:3,fx:[{t:'魔法',c:{G:1},txt:'回復1點血量',fn:'heal',v:1}]},
+R04:{id:'R04',n:'火刃侍從',col:'R',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{R:1},txt:'我方單位攻擊力+1',fn:'buff',v:1}]},
+R05:{id:'R05',n:'灰燼狼',col:'R',cost:1,race:'妖',atk:2,fx:[{t:'干擾',c:{X:1},txt:'對手選擇棄1張手牌',fn:'oppDisc',v:1}]},
+R06:{id:'R06',n:'焰心小妖',col:'R',cost:1,race:'妖',atk:3,fx:[{t:'立即',c:{B:1},txt:'抽1張牌',fn:'draw',v:1}]},
+R07:{id:'R07',n:'赤炎術士',col:'R',cost:1,race:'人',atk:2,fx:[{t:'干擾',c:{B:1},txt:'使對手消耗費用+1灰',fn:'costX',v:1}]},
+R08:{id:'R08',n:'爆炎幼龍',col:'R',cost:1,race:'幻',atk:2,fx:[{t:'魔法',c:{R:1},txt:'敵方單位攻擊力-1',fn:'debuff',v:1},{t:'立即',c:{R:1},txt:'抽1張牌',fn:'draw',v:1}]},
+R09:{id:'R09',n:'烈焰騎兵',col:'R',cost:2,race:'人',atk:3,fx:[{t:'魔法',c:{R:1},txt:'我方單位攻擊力+2',fn:'buff',v:2}]},
+R10:{id:'R10',n:'熔岩巨爪',col:'R',cost:2,race:'妖',atk:4,fx:[{t:'魔法',c:{R:1,X:1},txt:'敵方單位攻擊力-1',fn:'debuff',v:1},{t:'干擾',c:{B:1},txt:'對手需多花1藍能量',fn:'costB',v:1}]},
+R11:{id:'R11',n:'爆炎使者',col:'R',cost:2,race:'幻',atk:3,fx:[{t:'干擾',c:{B:1},txt:'對手本回合無法用立即',fn:'sealI',v:1}]},
+R12:{id:'R12',n:'炎息遊俠',col:'R',cost:2,race:'人',atk:3,fx:[{t:'魔法',c:{X:1},txt:'抽2張後棄1張',fn:'drawDisc1',v:2}]},
+R13:{id:'R13',n:'熾火妖',col:'R',cost:2,race:'妖',atk:3,fx:[{t:'干擾',c:{B:1,X:1},txt:'無效對手效果',fn:'nullify',v:1}]},
+R14:{id:'R14',n:'火山幻影',col:'R',cost:2,race:'幻',atk:2,fx:[{t:'魔法',c:{G:1},txt:'回復1點血量',fn:'heal',v:1}]},
+R15:{id:'R15',n:'焚世幻龍',col:'R',cost:3,race:'幻',atk:5,fx:[{t:'魔法',c:{R:1,X:2},txt:'對敵方造成1傷害',fn:'dmgP',v:1}]},
+R16:{id:'R16',n:'炎獄魔王',col:'R',cost:3,race:'妖',atk:5,fx:[{t:'立即',c:{B:1,X:1},txt:'我方單位攻擊力+1(不可干擾)',fn:'buff',v:1},{t:'干擾',c:{X:2},txt:'無效化對手效果',fn:'nullify',v:1}]},
+R17:{id:'R17',n:'赤龍武士',col:'R',cost:3,race:'人',atk:4,fx:[{t:'魔法',c:{R:1,X:1},txt:'我方單位攻擊力+2',fn:'buff',v:2},{t:'魔法',c:{B:1},txt:'抽1張牌',fn:'draw',v:1}]},
+R18:{id:'R18',n:'血焰祭師',col:'R',cost:3,race:'人',atk:4,fx:[{t:'干擾',c:{B:1,X:1},txt:'對手手牌與牌庫頂各棄1',fn:'discHT',v:1},{t:'魔法',c:{R:1},txt:'我方單位攻擊力+1',fn:'buff',v:1}]},
+};
+const IDS=Object.keys(C);
+let S=null, sel=null;
+const PHASES=['draw','summon','pay','effect','battle','clean'];
+function log(m,cls='sys'){const e=document.getElementById('log');const d=document.createElement('div');d.className=cls;d.textContent=`[${new Date().toLocaleTimeString('zh-TW',{hour12:false})}] ${m}`;e.appendChild(d);e.scrollTop=e.scrollHeight}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function mkDeck(f){let p=IDS.slice();if(f==='B'||f==='G'||f==='R')p=p.filter(id=>id[0]===f);shuffle(p);const d=p.slice(0,Math.min(20,p.length));while(d.length<20){const x=IDS.filter(i=>!d.includes(i));shuffle(x);d.push(...x.slice(0,20-d.length))}return shuffle(d)}
+function mkPlayer(f){const deck=mkDeck(f);const life=[];for(let i=0;i<6&&deck.length;i++)life.push(deck.pop());return{deck,hand:[],field:[],energy:{R:0,G:0,B:0,X:0},energyCards:[],discard:[],life,extraX:0,extraB:0,nullNext:false,sealM:false,sealI:false,pending:null,paid:false,atkMod:0}}
+function boot(f){document.getElementById('start').classList.add('hidden');document.getElementById('game').classList.remove('hidden');const of=['B','G','R'].filter(x=>x!==f);const of2=f==='MIX'?'MIX':of[Math.floor(Math.random()*of.length)]||'MIX';S={p:mkPlayer(f),e:mkPlayer(of2),phase:'draw',turn:1,first:true,effectDone:false};for(let i=0;i<5;i++){draw(S.p,1,true);draw(S.e,1,true)}log('遊戲開始｜你為'+(f==='B'?'潮汐藍':f==='G'?'森境綠':f==='R'?'燼火紅':'混合')+'牌組，生命牌各6張','sys');log('第一回合不抽牌。請選擇1張角色卡進行召喚。','sys');S.phase='summon';setPhase();render()}
+function draw(pl,n=1,silent=false){for(let i=0;i<n;i++){if(!pl.deck.length){if(pl.life.length){pl.life.pop();if(!silent)log((pl===S.p?'我方':'敵方')+'牌庫空，失去1生命牌','sys')}continue}const id=pl.deck.pop();pl.hand.push(id);if(!silent)log((pl===S.p?'我方':'敵方')+'抽到【'+C[id].n+'】',pl===S.p?'p1':'p2')}}
+function setPhase(){document.querySelectorAll('.ph').forEach(el=>{el.classList.remove('active','done');const i=PHASES.indexOf(el.dataset.p),cur=PHASES.indexOf(S.phase);if(i===cur)el.classList.add('active');else if(i<cur)el.classList.add('done')});document.getElementById('turnTag').textContent=`第${S.turn}回合｜${S.phase==='summon'?'召喚階段':S.phase==='pay'?'支付能量':S.phase==='effect'?'效果階段':S.phase==='battle'?'戰鬥結算':S.phase==='clean'?'回合結束':'—'}`}
+function totalEn(pl){return pl.energy.R+pl.energy.G+pl.energy.B+pl.energy.X}
+function canPay(cost,pl){const need={R:cost.R||0,G:cost.G||0,B:(cost.B||0)+(pl.extraB||0),X:(cost.X||0)+(pl.extraX||0)};let e={...pl.energy};for(const k of['R','G','B']){if(e[k]<need[k])return false;e[k]-=need[k]}return (e.R+e.G+e.B+e.X)>=need.X}
+function doPay(cost,pl){const need={R:cost.R||0,G:cost.G||0,B:(cost.B||0)+(pl.extraB||0),X:(cost.X||0)+(pl.extraX||0)};for(const k of['R','G','B'])pl.energy[k]-=need[k];let g=need.X;const ux=Math.min(pl.energy.X,g);pl.energy.X-=ux;g-=ux;for(const k of['R','G','B']){if(g<=0)break;const u=Math.min(pl.energy[k],g);pl.energy[k]-=u;g-=u}const spent=(need.R+need.G+need.B+need.X);for(let i=0;i<spent&&pl.energyCards.length;i++)pl.discard.push(pl.energyCards.pop());pl.extraX=0;pl.extraB=0}
+function costStr(c){const a=[];if(c.R)a.push('紅'+c.R);if(c.G)a.push('綠'+c.G);if(c.B)a.push('藍'+c.B);if(c.X)a.push('灰'+c.X);return a.join('+')||'0'}
+function cardDOM(id,opt={}){const d=document.createElement('div');const c=id?C[id]:null;d.className='card'+(c?' col-'+c.col:'')+(opt.sel?' sel':'')+(opt.energy?' energy':'')+(opt.back?' back':'');if(opt.back){d.textContent='🂠';return d}const face=document.createElement('div');face.className='face';face.innerHTML=`<div class="nm">${c.n}</div><div class="fx">${c.fx.map(f=>f.t+':'+f.txt).join('<br>')}</div>`;d.appendChild(face);const cost=document.createElement('div');cost.className='cost';cost.textContent=c.cost;d.appendChild(cost);if(opt.showAtk){const a=document.createElement('div');a.className='atk';a.textContent=(c.atk+(opt.mod||0));d.appendChild(a)}const r=document.createElement('div');r.className='race';r.textContent=c.race[0];d.appendChild(r);if(opt.onclick)d.onclick=opt.onclick;return d}
+function render(){if(!S)return;const p=S.p,e=S.e;document.getElementById('pLife').textContent=p.life.length;document.getElementById('pDeck').textContent=p.deck.length;document.getElementById('pDisc').textContent=p.discard.length;document.getElementById('pHandN').textContent=p.hand.length;document.getElementById('pR').textContent=p.energy.R;document.getElementById('pG').textContent=p.energy.G;document.getElementById('pB').textContent=p.energy.B;document.getElementById('pX').textContent=p.energy.X;document.getElementById('eLife').textContent=e.life.length;document.getElementById('eDeck').textContent=e.deck.length;document.getElementById('eDisc').textContent=e.discard.length;document.getElementById('eHandN').textContent=e.hand.length;document.getElementById('eEn').textContent=`R${e.energy.R} G${e.energy.G} B${e.energy.B} X${e.energy.X}`;const ph=document.getElementById('pHand');ph.innerHTML='';p.hand.forEach((id,i)=>ph.appendChild(cardDOM(id,{sel:sel&&sel.z==='hand'&&sel.i===i,onclick:()=>select('hand',i)})));const pf=document.getElementById('pField');pf.innerHTML='';p.field.forEach((u,i)=>pf.appendChild(cardDOM(u.id,{showAtk:true,mod:u.mod||0,sel:sel&&sel.z==='field'&&sel.i===i,onclick:()=>select('field',i)})));const pe=document.getElementById('pEnergy');pe.innerHTML='';p.energyCards.forEach((id,i)=>pe.appendChild(cardDOM(id,{energy:true})));const ef=document.getElementById('eField');ef.innerHTML='';e.field.forEach((u,i)=>ef.appendChild(cardDOM(u.id,{showAtk:true,mod:u.mod||0})));const eh=document.getElementById('eHand');eh.innerHTML='';e.hand.forEach(()=>eh.appendChild(cardDOM(null,{back:true})));updBtns();checkWin()}
+function select(z,i){if(S.phase==='clean')return;sel={z,i};const info=document.getElementById('selInfo');if(z==='hand'){const c=C[S.p.hand[i]];info.textContent=`手牌【${c.n}】費用${c.cost} ATK${c.atk}｜可轉能量或選為本回合召喚`}else if(z==='field'){const u=S.p.field[i];const c=C[u.id];info.textContent=`戰場【${c.n}】ATK${c.atk+(u.mod||0)}｜${c.fx.map(f=>f.t+' '+costStr(f.c)+':'+f.txt).join(' ／ ')}`}render()}
+function updBtns(){const bE=document.getElementById('btnEnergy'),bS=document.getElementById('btnSummon'),bP=document.getElementById('btnPay');const bF=document.getElementById('btnEffect'),bSk=document.getElementById('btnSkipFx'),bB=document.getElementById('btnBattle'),bEnd=document.getElementById('btnEnd');[bE,bS,bP,bF,bSk,bB,bEnd].forEach(b=>b.disabled=true);if(!S)return;if(S.phase==='summon'){bE.disabled=!(sel&&sel.z==='hand');bS.disabled=!(sel&&sel.z==='hand')}if(S.phase==='pay'){bE.disabled=!(sel&&sel.z==='hand');bP.disabled=!S.p.pending||S.p.paid}if(S.phase==='effect'){bF.disabled=!(sel&&sel.z==='field'&&S.p.field.length);bSk.disabled=false;bB.disabled=false}if(S.phase==='battle'){bB.disabled=false}if(S.phase==='clean'){bEnd.disabled=false}}
+function actToEnergy(){if(!sel||sel.z!=='hand')return;const p=S.p;const id=p.hand.splice(sel.i,1)[0];const c=C[id];p.energy[c.col]++;p.energyCards.push(id);log(`我方將【${c.n}】轉為${c.col==='R'?'紅':c.col==='G'?'綠':'藍'}能量`,'p1');sel=null;render()}
+function actSummon(){if(S.phase!=='summon'||!sel||sel.z!=='hand')return;const p=S.p;const id=p.hand[sel.i];p.pending={id,fromHand:true,idx:sel.i};log(`我方選擇召喚【${C[id].n}】（費用${C[id].cost}），進入支付階段`,'p1');aiSummon();S.phase='pay';setPhase();log('雙方同時公開召喚角色，請支付能量','sys');sel=null;render()}
+function aiSummon(){const e=S.e;let best=-1,bestScore=-99;e.hand.forEach((id,i)=>{const c=C[id];let sc=c.atk-c.cost;if(totalEn(e)>=c.cost)sc+=5;if(sc>bestScore){bestScore=sc;best=i}});if(best<0&&e.hand.length)best=0;if(best>=0){const id=e.hand[best];e.pending={id,fromHand:true,idx:best};log(`敵方選擇召喚【${C[id].n}】`,'p2')}else{if(e.deck.length){const id=e.deck.pop();e.pending={id,forced:true};log(`敵方強制翻牌召喚【${C[id].n}】`,'p2')}}}
+function actPay(){if(S.phase!=='pay'||!S.p.pending||S.p.paid)return;const p=S.p;const c=C[S.p.pending.id];const need=c.cost;while(totalEn(p)<need){if(p.hand.length){let idx=p.hand.findIndex((_,i)=>!(p.pending.fromHand&&i===p.pending.idx));if(idx<0)idx=0;const id=p.hand.splice(idx,1)[0];if(p.pending.fromHand&&p.pending.idx>idx)p.pending.idx--;p.energy[C[id].col]++;p.energyCards.push(id);log(`自動將【${C[id].n}】轉能量以支付`,'p1')}else if(p.deck.length){const id=p.deck.pop();p.energy[C[id].col]++;p.energyCards.push(id);log(`從牌庫頂翻【${C[id].n}】作能量`,'p1')}else if(p.life.length){const id=p.life.pop();p.energy[C[id].col]++;p.energyCards.push(id);log(`從生命牌翻【${C[id].n}】作能量`,'sys')}else{log('無法支付完整費用，我方敗北','sys');S.p.life=[];render();return}}let left=need;if(p.energy[c.col]>=left){p.energy[c.col]-=left;left=0}else{left-=p.energy[c.col];p.energy[c.col]=0;for(const k of['X','R','G','B']){if(left<=0)break;const u=Math.min(p.energy[k],left);p.energy[k]-=u;left-=u}}for(let i=0;i<need&&p.energyCards.length;i++)p.discard.push(p.energyCards.pop());if(p.pending.fromHand)p.hand.splice(p.pending.idx,1);p.field=[{id:p.pending.id,mod:0}];p.paid=true;p.pending=null;log(`我方成功召喚【${c.n}】登場 ATK${c.atk}`,'p1');aiPay();S.phase='effect';S.effectDone=false;setPhase();log('進入效果階段：先攻可發動魔法/立即，後攻可干擾。完成後點「進入戰鬥結算」','sys');render()}
+function aiPay(){const e=S.e;if(!e.pending)return;const c=C[e.pending.id];let need=c.cost;while(totalEn(e)<need){if(e.hand.length){const id=e.hand.shift();e.energy[C[id].col]++;e.energyCards.push(id)}else if(e.deck.length){const id=e.deck.pop();e.energy[C[id].col]++;e.energyCards.push(id)}else if(e.life.length){const id=e.life.pop();e.energy[C[id].col]++;e.energyCards.push(id)}else{log('敵方無法支付，敵方敗北','sys');e.life=[];return}}let left=need;if(e.energy[c.col]>=left){e.energy[c.col]-=left;left=0}else{left-=e.energy[c.col];e.energy[c.col]=0;for(const k of['X','R','G','B']){if(left<=0)break;const u=Math.min(e.energy[k],left);e.energy[k]-=u;left-=u}}for(let i=0;i<need&&e.energyCards.length;i++)e.discard.push(e.energyCards.pop());if(e.pending.fromHand)e.hand.splice(e.pending.idx,1);e.field=[{id:e.pending.id,mod:0}];e.pending=null;log(`敵方成功召喚【${c.n}】登場`,'p2')}
+function actEffect(){if(S.phase!=='effect'||!sel||sel.z!=='field')return;const u=S.p.field[sel.i];const c=C[u.id];const ok=c.fx.filter(f=>canPay(f.c,S.p));if(!ok.length){log('能量不足，無法發動效果','sys');return}if(ok.length===1){runFx(S.p,u,ok[0]);S.effectDone=true}else{document.getElementById('mTitle').textContent='選擇效果 - '+c.n;document.getElementById('mBody').innerHTML=ok.map((f,i)=>`<label style="display:block;margin:6px 0"><input type="radio" name="fx" value="${c.fx.indexOf(f)}"> ${f.t} ${costStr(f.c)}：${f.txt}</label>`).join('');document.getElementById('mOk').onclick=()=>{const r=document.querySelector('input[name=fx]:checked');if(!r)return;closeModal();runFx(S.p,u,c.fx[+r.value]);S.effectDone=true;render()};document.getElementById('modal').classList.add('show')}setTimeout(aiEffect,400)}
+function actSkipEffect(){S.effectDone=true;log('我方跳過效果','p1');aiEffect();render()}
+function aiEffect(){const e=S.e;if(!e.field.length)return;const u=e.field[0];const c=C[u.id];for(const f of c.fx){if(canPay(f.c,e)){runFx(e,u,f);break}}}
+function runFx(pl,unit,f){if(!canPay(f.c,pl)){log('支付失敗','sys');return}doPay(f.c,pl);const isP=pl===S.p;const opp=isP?S.e:S.p;log(`${isP?'我方':'敵方'}發動【${C[unit.id].n}】${f.t}：${f.txt}`,isP?'fx':'p2');switch(f.fn){case 'draw':draw(pl,f.v||1);break;case 'drawDisc':if(pl.discard.length){const i=Math.floor(Math.random()*pl.discard.length);const id=pl.discard.splice(i,1)[0];pl.hand.push(id);log(`從棄牌獲得【${C[id].n}】`,isP?'p1':'p2')}break;case 'buff':unit.mod=(unit.mod||0)+(f.v||1);log(`攻擊力+${f.v}`,isP?'p1':'p2');break;case 'debuff':if(opp.field.length){opp.field[0].mod=(opp.field[0].mod||0)-(f.v||1);log(`敵方單位攻擊力-${f.v}`,isP?'p1':'p2')}break;case 'heal':log(`回復概念生命（目前生命牌${pl.life.length}）`,isP?'p1':'p2');break;case 'dmgP':for(let i=0;i<(f.v||1)&&opp.life.length;i++){opp.discard.push(opp.life.pop())}log(`造成${f.v}點傷害，對手生命牌剩${opp.life.length}`,isP?'bat':'p2');break;case 'oppDisc':for(let i=0;i<(f.v||1)&&opp.hand.length;i++){const id=opp.hand.splice(Math.floor(Math.random()*opp.hand.length),1)[0];opp.discard.push(id);log(`對手棄【${C[id].n}】`,isP?'p1':'p2')}break;case 'costX':opp.extraX=(opp.extraX||0)+(f.v||1);break;case 'costB':opp.extraB=(opp.extraB||0)+(f.v||1);break;case 'nullify':case 'nullM':opp.nullNext=true;break;case 'drawRet':draw(pl,f.v||2);if(pl.hand.length){const id=pl.hand.pop();pl.deck.push(id);shuffle(pl.deck)}break;case 'drawDisc1':draw(pl,f.v||2);if(pl.hand.length){pl.discard.push(pl.hand.pop())}break;case 'healDeb':log('回復與減攻（簡化）',isP?'p1':'p2');if(opp.field.length)opp.field[0].mod=(opp.field[0].mod||0)-1;break;case 'mill':for(let i=0;i<2&&opp.hand.length;i++){opp.deck.push(opp.hand.pop())}shuffle(opp.deck);draw(opp,1);break;case 'bounce':if(opp.hand.length){opp.deck.push(opp.hand.pop());shuffle(opp.deck);draw(opp,1)}break;case 'discHT':if(opp.hand.length)opp.discard.push(opp.hand.pop());if(opp.deck.length)opp.discard.push(opp.deck.pop());break;case 'sealM':opp.sealM=true;break;case 'sealI':opp.sealI=true;break;default:log(`效果 ${f.fn} 已觸發`,'sys')}sel=null;render()}
+function actBattle(){if(S.phase!=='effect'&&S.phase!=='battle')return;S.phase='battle';setPhase();const pAtk=S.p.field.length?(C[S.p.field[0].id].atk+(S.p.field[0].mod||0)):0;const eAtk=S.e.field.length?(C[S.e.field[0].id].atk+(S.e.field[0].mod||0)):0;log(`戰鬥力比較：我方 ${pAtk}  vs  敵方 ${eAtk}`,'bat');if(pAtk>eAtk){const d=pAtk-eAtk;const rem=Math.min(d,S.e.life.length);for(let i=0;i<rem;i++)S.e.discard.push(S.e.life.pop());log(`我方勝出，敵方失去 ${rem} 張生命牌 → 剩 ${S.e.life.length}`,'bat')}else if(eAtk>pAtk){const d=eAtk-pAtk;const rem=Math.min(d,S.p.life.length);for(let i=0;i<rem;i++)S.p.discard.push(S.p.life.pop());log(`敵方勝出，我方失去 ${rem} 張生命牌 → 剩 ${S.p.life.length}`,'bat')}else{if(S.p.life.length)S.p.discard.push(S.p.life.pop());if(S.e.life.length)S.e.discard.push(S.e.life.pop());log('平手，雙方各失去 1 張生命牌','bat')}S.phase='clean';setPhase();log('戰鬥結束。點「結束回合」進行整理並進入下一回合','sys');render()}
+function actEndTurn(){if(S.phase!=='clean')return;S.p.field.forEach(u=>S.p.discard.push(u.id));S.p.field=[];S.e.field.forEach(u=>S.e.discard.push(u.id));S.e.field=[];S.p.paid=false;S.e.paid=false;S.p.pending=null;S.e.pending=null;S.p.sealM=false;S.p.sealI=false;S.e.sealM=false;S.e.sealI=false;while(S.p.hand.length>7)S.p.discard.push(S.p.hand.pop());while(S.e.hand.length>7)S.e.discard.push(S.e.hand.pop());S.turn++;log(`—— 第 ${S.turn} 回合開始 ——`,'sys');draw(S.p,2);draw(S.e,2);S.phase='summon';setPhase();log('請選擇本回合要召喚的角色卡','sys');sel=null;render()}
+function checkWin(){if(!S)return;if(S.p.life.length<=0){log('★★★ 你的生命牌耗盡，敵方獲勝 ★★★','p2');S.phase='end'}else if(S.e.life.length<=0){log('★★★ 敵方生命牌耗盡，你獲勝！★★★','p1');S.phase='end'}}
+function closeModal(){document.getElementById('modal').classList.remove('show')}
+</script>
+</body>
+</html>
