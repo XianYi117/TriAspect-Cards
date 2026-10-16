@@ -15,6 +15,19 @@ function saveCustom(ids) { try { localStorage.setItem('deck-v102', JSON.stringif
 IO.sleep = ms => { const id = gameId; return new Promise(r => setTimeout(() => { if (id === gameId) r(); }, ms)); };
 IO.render = () => render();
 IO.onLog = () => {};
+// 生命牌進棄牌堆時，畫面上方跳出小視窗顯示是哪幾張，停留 5 秒（點一下可提早關閉）
+let toasts = [], toastSeq = 0;
+IO.reveal = ({ who, title, cards }) => {
+  const id = ++toastSeq;
+  toasts.push({ id, who, title, cards: cards.slice() });
+  renderToasts();
+  setTimeout(() => { toasts = toasts.filter(t => t.id !== id); renderToasts(); }, 5000);
+};
+function renderToasts() {
+  const box = document.getElementById('toasts'); if (!box) return;
+  box.innerHTML = toasts.map(t => `<div class="toast ${t.who === 0 ? 'mine' : ''}" data-act="toastclose" data-id="${t.id}" role="status">
+    <div class="toast-t">${esc(t.title)}</div><div class="toast-cards">${t.cards.map(c => cardHTML(c, { size: 's' })).join('')}</div><div class="toast-bar"></div></div>`).join('');
+}
 IO.ask = (kind, ctx) => new Promise(res => { const id = gameId; pend = { kind, ctx, res, id }; if (kind === 'summon') sel = null; render();
   if (kind === 'next') setTimeout(() => { if (pend && pend.kind === 'next' && pend.id === id && !modal) answer(true); }, 2200); });
 IO.choose = opts => new Promise(res => { modal = { type: 'choose', ...opts, picked: opts.pre ? opts.pre.slice() : [], res }; render(); });
@@ -304,6 +317,7 @@ function rulesHTML() {
 document.addEventListener('click', async ev => {
   const t = ev.target.closest('[data-act]'); if (!t) return;
   const a = t.dataset.act;
+  if (a === 'toastclose') { toasts = toasts.filter(x => x.id !== +t.dataset.id); renderToasts(); return; }
   if (a === 'close') { if (t.classList.contains('veil') && ev.target !== t) return; modal = null; render(); return; }
   if (a === 'dbg') { showOppHand = t.checked; render(); return; }
   if (a === 'copylog') {

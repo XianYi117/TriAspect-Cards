@@ -2,7 +2,7 @@
 // 與畫面無關；透過 IO 物件和畫面（或測試程式）溝通。
 const CN = { R: '紅', G: '綠', B: '藍', X: '灰' };
 const TN = { magic: '魔法', inter: '干擾', instant: '立即' };
-const IO = { ask: null, choose: null, render: () => {}, sleep: () => Promise.resolve(), onLog: () => {} };
+const IO = { ask: null, choose: null, render: () => {}, sleep: () => Promise.resolve(), onLog: () => {}, reveal: () => {} };
 
 function parseOp(s) {
   let m;
@@ -97,8 +97,10 @@ function draw(i, n) {
 }
 function damage(i, n, toHand) {
   const p = P(i); const k = Math.min(n, p.life.length);
-  for (let a = 0; a < k; a++) { const c = p.life.pop(); (toHand ? p.hand : p.discard).push(c); }
-  if (k) log(`${p.name} 失去 ${k} 張生命牌${toHand ? '，加入手牌' : '，移至棄牌堆'}（生命剩 ${p.life.length}）`, i);
+  const moved = [];
+  for (let a = 0; a < k; a++) { const c = p.life.pop(); moved.push(c); (toHand ? p.hand : p.discard).push(c); }
+  if (k) log(`${p.name} 失去 ${k} 張生命牌${toHand ? '，加入手牌' : `，移至棄牌堆：${moved.map(c => '【' + c.name + '】').join('')}`}（生命剩 ${p.life.length}）`, i);
+  if (k && !toHand) IO.reveal({ who: i, title: `${p.name}的生命牌進入棄牌堆`, cards: moved });
 }
 function heal(i, n) {
   const p = P(i); const k = Math.min(n, p.hpMax - p.life.length, p.discard.length);
@@ -379,7 +381,9 @@ async function forcedSummon(i) {
     const c = await pick(i, p.hand, need, `無法召喚規則：從手牌棄 ${Math.min(need, p.hand.length)} 張`, '牌庫不足，改從手牌支付不足的能量');
     c.forEach(x => { removeFrom(p.hand, x); p.discard.push(x); paid.push('手牌'); need--; });
   }
-  while (need > 0 && p.life.length) { p.discard.push(p.life.pop()); paid.push('生命牌'); need--; }
+  const lifePaid = [];
+  while (need > 0 && p.life.length) { const c = p.life.pop(); p.discard.push(c); lifePaid.push(c); paid.push('生命牌【' + c.name + '】'); need--; }
+  if (lifePaid.length) IO.reveal({ who: i, title: `${p.name}用生命牌支付召喚費用，進入棄牌堆`, cards: lifePaid });
   log(`${p.name} 執行【無法召喚規則】：翻開牌庫頂【${card.name}】強制出戰（攻擊力 ${card.atk}），支付 ${paid.join('、') || '無'}`, i);
 }
 async function actionWindow(i) {

@@ -184,6 +184,14 @@ label.tog{font-size:11.5px;color:var(--mute);display:flex;gap:4px;align-items:ce
 .rules li{margin-bottom:3px}
 .rules .note{color:var(--brass)}
 
+.toasts{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;max-width:calc(100% - 32px)}
+.toast{pointer-events:auto;cursor:pointer;background:var(--slab);border:1px solid var(--bad);border-radius:10px;padding:10px 14px 12px;box-shadow:0 10px 30px #000c;position:relative;overflow:hidden;animation:toastIn .25s ease-out}
+.toast.mine{border-color:var(--bad);background:#24161399}
+.toast-t{font-family:var(--f-display);color:var(--bad);font-size:15px;margin-bottom:8px;text-align:center}
+.toast-cards{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.toast-bar{position:absolute;left:0;bottom:0;height:3px;background:var(--bad);animation:toastBar 5s linear forwards}
+@keyframes toastIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+@keyframes toastBar{from{width:100%}to{width:0}}
 @media (max-width:1100px){.app{grid-template-columns:1fr}.intel{position:static}.handrow{grid-template-columns:1fr}}
 @media (max-width:640px){
   .side{grid-template-columns:1fr}.axis{grid-template-columns:1fr}.card{--w:104px}.card.l{--w:132px}.card.xs{--w:46px}.fieldslot{min-height:0}
@@ -237,6 +245,7 @@ label.tog{font-size:11.5px;color:var(--mute);display:flex;gap:4px;align-items:ce
   </aside>
 </main>
 <div id="modal"></div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
 
 <script>
 const DATA = {"cards":[{"id":"R01","name":"燼火劍士","color":"R","cost":1,"race":"人","atk":2,"fx":["魔法/紅1：我方單位攻擊力+1。"]},{"id":"R02","name":"赤焰斥候","color":"R","cost":1,"race":"人","atk":2,"fx":["魔法/灰1：抽1張牌。"]},{"id":"R03","name":"烈爪妖","color":"R","cost":1,"race":"妖","atk":3,"fx":["魔法/綠1：回復1點血量。"]},{"id":"R04","name":"火刃侍從","color":"R","cost":1,"race":"人","atk":3,"fx":["魔法/紅1：我方單位攻擊力+1。"]},{"id":"R05","name":"灰燼狼","color":"R","cost":1,"race":"妖","atk":2,"fx":["干擾/灰1：對手選擇棄1張手牌。"]},{"id":"R06","name":"焰心小妖","color":"R","cost":1,"race":"妖","atk":3,"fx":["立即/藍1：抽1張牌(可被干擾)"]},{"id":"R07","name":"赤炎術士","color":"R","cost":1,"race":"人","atk":2,"fx":["干擾/藍1：使對手消耗費用+1灰。"]},{"id":"R08","name":"爆炎幼龍","color":"R","cost":1,"race":"幻","atk":2,"fx":["魔法/紅1：敵方單位攻擊力-1。","立即/紅1：抽1張牌"]},{"id":"R09","name":"烈焰騎兵","color":"R","cost":2,"race":"人","atk":3,"fx":["魔法/紅1：我方單位攻擊力+2。"]},{"id":"R10","name":"熔岩巨爪","color":"R","cost":2,"race":"妖","atk":4,"fx":["魔法/紅1+灰1：敵方單位攻擊力-1。","干擾/藍1：對手需多花費1張藍色能量。"]},{"id":"R11","name":"爆炎使者","color":"R","cost":2,"race":"幻","atk":3,"fx":["干擾/藍1：對手本回合無法使用立即效果。"]},{"id":"R12","name":"炎息遊俠","color":"R","cost":2,"race":"人","atk":3,"fx":["魔法/紅1+灰1：對敵方玩家直接造成1點傷害"]},{"id":"R13","name":"熾火妖","color":"R","cost":2,"race":"妖","atk":3,"fx":["干擾/藍1+灰1：無效化對手效果。"]},{"id":"R14","name":"火山幻影","color":"R","cost":2,"race":"幻","atk":4,"fx":["魔法/綠1：回復1點血量。"]},{"id":"R15","name":"焚世幻龍","color":"R","cost":3,"race":"幻","atk":5,"fx":["魔法/紅1+灰2：對敵方玩家直接造成1點傷害(移至棄牌堆)"]},{"id":"R16","name":"炎獄魔王","color":"R","cost":3,"race":"妖","atk":5,"fx":["立即/藍1+灰1：我方單位攻擊力+1(不可被干擾)。","干擾/灰2：無效化對手效果。"]},{"id":"R17","name":"赤龍武士","color":"R","cost":3,"race":"人","atk":4,"fx":["魔法/紅1+灰1：我方單位攻擊力+2。","魔法/藍1：抽1張牌。"]},{"id":"R18","name":"血焰祭師","color":"R","cost":3,"race":"人","atk":4,"fx":["干擾/藍1+灰1：對手從手牌、牌庫頂各棄一張。","魔法/紅1：我方單位攻擊力+1。"]},{"id":"G01","name":"森境護衛","color":"G","cost":1,"race":"人","atk":2,"fx":["魔法/藍1：抽1張牌。"]},{"id":"G02","name":"苔角小妖","color":"G","cost":1,"race":"妖","atk":2,"fx":["干擾/灰1：對手選擇棄1張手牌。"]},{"id":"G03","name":"葉刃護衛","color":"G","cost":1,"race":"人","atk":2,"fx":["魔法/藍1：敵方單位攻擊力-1"]},{"id":"G04","name":"藤蔓小妖","color":"G","cost":1,"race":"妖","atk":2,"fx":["干擾/灰1：對手選擇棄1張手牌。"]},{"id":"G05","name":"森靈幻影","color":"G","cost":1,"race":"幻","atk":3,"fx":["干擾/綠1：無效魔法效果。"]},{"id":"G06","name":"青木術士","color":"G","cost":1,"race":"人","atk":2,"fx":["魔法/灰1：抽1張牌。"]},{"id":"G07","name":"翠葉斥候","color":"G","cost":1,"race":"人","atk":2,"fx":["魔法/綠1：敵方單位攻擊力-1。"]},{"id":"G08","name":"荊棘妖","color":"G","cost":1,"race":"妖","atk":3,"fx":["魔法/綠1：回復1點血量。"]},{"id":"G09","name":"巡林獵手","color":"G","cost":2,"race":"人","atk":4,"fx":["魔法/綠1：回復1點血量。","干擾/藍1：無效魔法效果。"]},{"id":"G10","name":"苔石巨人","color":"G","cost":2,"race":"妖","atk":3,"fx":["魔法/綠1+灰1：敵方單位攻擊力-2"]},{"id":"G11","name":"綠影刺客","color":"G","cost":2,"race":"幻","atk":3,"fx":["干擾/藍1+灰1：無效化對手效果。","魔法/綠1+灰1：從棄牌堆隨機抽1張牌。"]},{"id":"G12","name":"古樹守護","color":"G","cost":2,"race":"人","atk":3,"fx":["魔法/藍1：抽1張牌。","魔法/灰1：敵方單位傷害-1。"]},{"id":"G13","name":"蔓藤妖","color":"G","cost":2,"race":"妖","atk":3,"fx":["干擾/灰1：對手消耗費用+1灰。","魔法/綠1+灰1：從棄牌堆隨機抽1張牌。"]},{"id":"G14","name":"翠葉幻靈","color":"G","cost":2,"race":"幻","atk":4,"fx":["魔法/綠1：回復1點血量。"]},{"id":"G15","name":"古木守望者","color":"G","cost":3,"race":"人","atk":5,"fx":["干擾/藍1+灰1：對手需多花費1張藍色能量。","魔法/綠1+灰1：敵方單位傷害-2。"]},{"id":"G16","name":"森境領主","color":"G","cost":3,"race":"人","atk":5,"fx":["魔法/藍1+灰1：敵方單位攻擊力-2","魔法/綠1：回復1點血量。"]},{"id":"G17","name":"古妖王","color":"G","cost":3,"race":"妖","atk":4,"fx":["魔法/綠1+灰2：回復2點血量、敵方單位攻擊力-1","立即/藍1：抽1張牌。"]},{"id":"G18","name":"世界樹幻影","color":"G","cost":3,"race":"幻","atk":5,"fx":["魔法/綠1+灰1：對手隨機棄2張手牌。","干擾/灰2：無效化對手效果。"]},{"id":"B01","name":"潮汐學徒","color":"B","cost":1,"race":"人","atk":2,"fx":["魔法/紅1：我方單位攻擊力+1。","魔法/綠1+灰1：從棄牌堆隨機抽1張牌。"]},{"id":"B02","name":"霧影小妖","color":"B","cost":1,"race":"妖","atk":2,"fx":["干擾/藍1：使對手消耗費用+1灰。"]},{"id":"B03","name":"泡沫幻魚","color":"B","cost":1,"race":"幻","atk":3,"fx":["立即/藍1：將1張卡牌視為任意顏色(可被干擾)。"]},{"id":"B04","name":"潮汐守衛","color":"B","cost":1,"race":"人","atk":2,"fx":["魔法/藍1：抽1張牌。"]},{"id":"B05","name":"泡沫海貝","color":"B","cost":1,"race":"妖","atk":2,"fx":["干擾/灰1：對手選擇棄1張手牌。"]},{"id":"B06","name":"泡沫精靈","color":"B","cost":1,"race":"幻","atk":3,"fx":["魔法/藍1：對手1張手牌回牌庫並補1張。"]},{"id":"B07","name":"冰晶學徒","color":"B","cost":1,"race":"人","atk":2,"fx":["魔法/灰1：敵方單位攻擊力-1。"]},{"id":"B08","name":"深海斥候","color":"B","cost":1,"race":"妖","atk":2,"fx":["魔法/藍1：從棄牌堆隨機抽1張牌。"]},{"id":"B09","name":"鏡湖幻靈","color":"B","cost":2,"race":"幻","atk":3,"fx":["魔法/綠1+灰1：抽2張牌，然後放回1張。","干擾/藍1+灰1：無效化對手效果。"]},{"id":"B10","name":"鏡湖術士","color":"B","cost":2,"race":"人","atk":3,"fx":["魔法/藍1+灰1：抽2張牌，然後放回1張。"]},{"id":"B11","name":"霧隱妖","color":"B","cost":2,"race":"妖","atk":4,"fx":["魔法/灰1：抽2張牌，然後棄1張牌。"]},{"id":"B12","name":"幻影魚群","color":"B","cost":2,"race":"幻","atk":3,"fx":["魔法/綠1：回復1點血量。","魔法/紅1：敵方單位攻擊力-1。"]},{"id":"B13","name":"寒冰使者","color":"B","cost":2,"race":"人","atk":4,"fx":["魔法/紅1：我方單位攻擊力+1。"]},{"id":"B14","name":"水霧幻靈","color":"B","cost":2,"race":"幻","atk":3,"fx":["立即/藍1+灰1：抽1張牌(不可被干擾)。"]},{"id":"B15","name":"冰晶妖王","color":"B","cost":3,"race":"妖","atk":4,"fx":["魔法/綠1+灰1：複製場上任意效果(費用2以下)。","魔法/藍1+灰1：敵方單位傷害-2。"]},{"id":"B16","name":"冰晶女皇","color":"B","cost":3,"race":"妖","atk":5,"fx":["魔法/藍1+灰1：敵方單位傷害-2。","干擾/綠1+灰1：對手將手牌中的2張牌放回牌庫，洗勻後再抽1張。"]},{"id":"B17","name":"深海幻龍","color":"B","cost":3,"race":"幻","atk":4,"fx":["魔法/藍1+灰1：複製場上任意效果(費用2以下)。","立即/紅1：抽1張牌。"]},{"id":"B18","name":"潮汐領主","color":"B","cost":3,"race":"人","atk":4,"fx":["魔法/藍1+灰1：抽2張牌。","立即/灰2：禁止使用魔法效果。"]}],"leaders":[{"id":"L01","name":"犼太郎","race":"妖","hp":6},{"id":"L02","name":"阿龍","race":"幻","hp":6},{"id":"L03","name":"巨魔","race":"人","hp":6},{"id":"L04","name":"花拉","race":"幻","hp":6}]};
@@ -247,7 +256,7 @@ const BACK = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAY
 // 與畫面無關；透過 IO 物件和畫面（或測試程式）溝通。
 const CN = { R: '紅', G: '綠', B: '藍', X: '灰' };
 const TN = { magic: '魔法', inter: '干擾', instant: '立即' };
-const IO = { ask: null, choose: null, render: () => {}, sleep: () => Promise.resolve(), onLog: () => {} };
+const IO = { ask: null, choose: null, render: () => {}, sleep: () => Promise.resolve(), onLog: () => {}, reveal: () => {} };
 
 function parseOp(s) {
   let m;
@@ -342,8 +351,10 @@ function draw(i, n) {
 }
 function damage(i, n, toHand) {
   const p = P(i); const k = Math.min(n, p.life.length);
-  for (let a = 0; a < k; a++) { const c = p.life.pop(); (toHand ? p.hand : p.discard).push(c); }
-  if (k) log(`${p.name} 失去 ${k} 張生命牌${toHand ? '，加入手牌' : '，移至棄牌堆'}（生命剩 ${p.life.length}）`, i);
+  const moved = [];
+  for (let a = 0; a < k; a++) { const c = p.life.pop(); moved.push(c); (toHand ? p.hand : p.discard).push(c); }
+  if (k) log(`${p.name} 失去 ${k} 張生命牌${toHand ? '，加入手牌' : `，移至棄牌堆：${moved.map(c => '【' + c.name + '】').join('')}`}（生命剩 ${p.life.length}）`, i);
+  if (k && !toHand) IO.reveal({ who: i, title: `${p.name}的生命牌進入棄牌堆`, cards: moved });
 }
 function heal(i, n) {
   const p = P(i); const k = Math.min(n, p.hpMax - p.life.length, p.discard.length);
@@ -624,7 +635,9 @@ async function forcedSummon(i) {
     const c = await pick(i, p.hand, need, `無法召喚規則：從手牌棄 ${Math.min(need, p.hand.length)} 張`, '牌庫不足，改從手牌支付不足的能量');
     c.forEach(x => { removeFrom(p.hand, x); p.discard.push(x); paid.push('手牌'); need--; });
   }
-  while (need > 0 && p.life.length) { p.discard.push(p.life.pop()); paid.push('生命牌'); need--; }
+  const lifePaid = [];
+  while (need > 0 && p.life.length) { const c = p.life.pop(); p.discard.push(c); lifePaid.push(c); paid.push('生命牌【' + c.name + '】'); need--; }
+  if (lifePaid.length) IO.reveal({ who: i, title: `${p.name}用生命牌支付召喚費用，進入棄牌堆`, cards: lifePaid });
   log(`${p.name} 執行【無法召喚規則】：翻開牌庫頂【${card.name}】強制出戰（攻擊力 ${card.atk}），支付 ${paid.join('、') || '無'}`, i);
 }
 async function actionWindow(i) {
@@ -837,6 +850,19 @@ function saveCustom(ids) { try { localStorage.setItem('deck-v102', JSON.stringif
 IO.sleep = ms => { const id = gameId; return new Promise(r => setTimeout(() => { if (id === gameId) r(); }, ms)); };
 IO.render = () => render();
 IO.onLog = () => {};
+// 生命牌進棄牌堆時，畫面上方跳出小視窗顯示是哪幾張，停留 5 秒（點一下可提早關閉）
+let toasts = [], toastSeq = 0;
+IO.reveal = ({ who, title, cards }) => {
+  const id = ++toastSeq;
+  toasts.push({ id, who, title, cards: cards.slice() });
+  renderToasts();
+  setTimeout(() => { toasts = toasts.filter(t => t.id !== id); renderToasts(); }, 5000);
+};
+function renderToasts() {
+  const box = document.getElementById('toasts'); if (!box) return;
+  box.innerHTML = toasts.map(t => `<div class="toast ${t.who === 0 ? 'mine' : ''}" data-act="toastclose" data-id="${t.id}" role="status">
+    <div class="toast-t">${esc(t.title)}</div><div class="toast-cards">${t.cards.map(c => cardHTML(c, { size: 's' })).join('')}</div><div class="toast-bar"></div></div>`).join('');
+}
 IO.ask = (kind, ctx) => new Promise(res => { const id = gameId; pend = { kind, ctx, res, id }; if (kind === 'summon') sel = null; render();
   if (kind === 'next') setTimeout(() => { if (pend && pend.kind === 'next' && pend.id === id && !modal) answer(true); }, 2200); });
 IO.choose = opts => new Promise(res => { modal = { type: 'choose', ...opts, picked: opts.pre ? opts.pre.slice() : [], res }; render(); });
@@ -1126,6 +1152,7 @@ function rulesHTML() {
 document.addEventListener('click', async ev => {
   const t = ev.target.closest('[data-act]'); if (!t) return;
   const a = t.dataset.act;
+  if (a === 'toastclose') { toasts = toasts.filter(x => x.id !== +t.dataset.id); renderToasts(); return; }
   if (a === 'close') { if (t.classList.contains('veil') && ev.target !== t) return; modal = null; render(); return; }
   if (a === 'dbg') { showOppHand = t.checked; render(); return; }
   if (a === 'copylog') {
