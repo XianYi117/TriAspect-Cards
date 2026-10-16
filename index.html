@@ -1089,8 +1089,8 @@ document.addEventListener('click', async ev => {
   if (a === 'rps') {
     const hands = ['剪刀', '石頭', '布'], me = +t.dataset.k, ai = Math.floor(Math.random() * 3);
     const res = (me - ai + 3) % 3; // 1 = 我贏
-    if (res === 0) { modal.rps = `你出${hands[me]}，電腦也出${hands[ai]}。平手，再猜一次。`; modal.first = undefined; }
-    else { modal.first = res === 1 ? 0 : 1; modal.rps = `你出${hands[me]}，電腦出${hands[ai]}：${res === 1 ? '你' : '電腦'}第 1 回合先攻。`; }
+    if (res === 0) { modal.rps = `玩家出${hands[me]}，電腦也出${hands[ai]}：平手，請再猜一次。`; modal.first = undefined; }
+    else { modal.first = res === 1 ? 0 : 1; modal.rps = `玩家出${hands[me]}，電腦出${hands[ai]}，${res === 1 ? '玩家' : '電腦'}獲勝：【${res === 1 ? '玩家先攻' : '玩家後攻'}】`; }
     render(); return;
   }
   if (a === 'start') { startGame(); return; }
