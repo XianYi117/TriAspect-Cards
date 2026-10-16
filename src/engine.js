@@ -163,7 +163,15 @@ function payFromPool(i, cost) {
 }
 
 // ---- 可否召喚 ----
-function canSummon(p, card) { return p.hand.filter(c => c !== card && (c.color === card.color || c.wild)).length >= card.cost; }
+// RULES.summon：'same' = 召喚費用全部要同色（現行規則）；'oneSame' = 至少 1 張同色，其餘任意色（測試用）
+const RULES = { summon: 'same' };
+const sameColor = (c, card) => c.color === card.color || c.wild;
+function canSummon(p, card) {
+  const others = p.hand.filter(c => c !== card);
+  if (RULES.summon === 'oneSame') return others.length >= card.cost && others.some(c => sameColor(c, card));
+  return others.filter(c => sameColor(c, card)).length >= card.cost;
+}
+function summonPayOptions(p, unit) { return RULES.summon === 'oneSame' ? p.hand.filter(c => c !== unit) : p.hand.filter(c => c !== unit && sameColor(c, unit)); }
 function anySummon(p) { return p.hand.some(c => canSummon(p, c)); }
 
 // ---- 效果可否發動 ----
@@ -419,7 +427,9 @@ function aiSummon(i) {
   if (!cands.length) return { forced: true };
   cands.sort((a, b) => (b.atk * 1.2 - b.cost * 0.5) - (a.atk * 1.2 - a.cost * 0.5));
   const unit = cands[0];
-  const pay = p.hand.filter(c => c !== unit && (c.color === unit.color || c.wild)).sort((a, b) => val(a) - val(b)).slice(0, unit.cost);
+  const opts = summonPayOptions(p, unit).sort((a, b) => val(a) - val(b));
+  let pay = opts.slice(0, unit.cost);
+  if (!pay.some(c => sameColor(c, unit))) pay = [opts.find(c => sameColor(c, unit)), ...opts.filter(c => !sameColor(c, unit)).slice(0, unit.cost - 1)];
   return { unit, pay };
 }
 function dmgWith(i, modMe, modOpp, redMe) {
@@ -520,4 +530,4 @@ function buildDeck(colors) {
   for (const [cost, n] of [[1, 9], [2, 8], [3, MAX_COST3]]) out.push(...shuffle(all.filter(c => colors.includes(c.color) && c.cost === cost)).slice(0, n));
   return out.map(c => c.id);
 }
-if (typeof module !== 'undefined') module.exports = { IO, loadData, newGame, gameLoop, buildDeck, get G() { return G; }, get LEADERS() { return LEADERS; }, DEFS: () => DEFS, parseFx };
+if (typeof module !== 'undefined') module.exports = { IO, RULES, loadData, newGame, gameLoop, buildDeck, get G() { return G; }, get LEADERS() { return LEADERS; }, DEFS: () => DEFS, parseFx };
