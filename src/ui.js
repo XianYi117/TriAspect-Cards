@@ -15,7 +15,8 @@ function saveCustom(ids) { try { localStorage.setItem('deck-v102', JSON.stringif
 IO.sleep = ms => { const id = gameId; return new Promise(r => setTimeout(() => { if (id === gameId) r(); }, ms)); };
 IO.render = () => render();
 IO.onLog = () => {};
-IO.ask = (kind, ctx) => new Promise(res => { const id = gameId; pend = { kind, ctx, res, id }; if (kind === 'summon') sel = null; render(); });
+IO.ask = (kind, ctx) => new Promise(res => { const id = gameId; pend = { kind, ctx, res, id }; if (kind === 'summon') sel = null; render();
+  if (kind === 'next') setTimeout(() => { if (pend && pend.kind === 'next' && pend.id === id && !modal) answer(true); }, 2200); });
 IO.choose = opts => new Promise(res => { modal = { type: 'choose', ...opts, picked: opts.pre ? opts.pre.slice() : [], res }; render(); });
 function answer(v) { const p = pend; pend = null; sel = null; p.res(v); render(); }
 
@@ -40,7 +41,9 @@ function cardHTML(c, o = {}) {
   </div>`;
 }
 const backHTML = (size, attrs = '') => `<div class="card back ${size || ''}" style="background-image:url(${BACK})" ${attrs}></div>`;
-function tapHTML(e, undo) { return `<div class="tap ${e.wild ? 'cW' : 'c' + e.color} ${e.spent ? 'spent' : ''}" title="${esc(e.card.name)}"><b>${esc(e.card.name)}</b><span>${e.wild ? '任意色' : CN[e.color] + '色'}能量</span>${undo && !e.spent ? `<button class="undo" data-act="unenergy" data-uid="${e.card.uid}" title="返回手牌">↩ 返回</button>` : ''}</div>`; }
+function tapHTML(e, undo) {
+  if (e.token) return `<div class="tap cW ${e.spent ? 'spent' : ''}" title="回合能量"><b>回合能量</b><span>任意色・本回合</span></div>`;
+  return `<div class="tap ${e.wild ? 'cW' : 'c' + e.color} ${e.spent ? 'spent' : ''}" title="${esc(e.card.name)}"><b>${esc(e.card.name)}</b><span>${e.wild ? '任意色' : CN[e.color] + '色'}能量</span>${undo && !e.spent ? `<button class="undo" data-act="unenergy" data-uid="${e.card.uid}" title="返回手牌">↩ 返回</button>` : ''}</div>`; }
 function poolText(p) {
   const u = unspent(p); if (!p.consume.length) return '';
   const cnt = { R: 0, G: 0, B: 0, W: 0 }; u.forEach(e => cnt[e.wild ? 'W' : e.color]++);
@@ -140,7 +143,7 @@ function promptHTML() {
   if (pend.kind === 'next') {
     const r = G.result;
     const txt = r.pw[0] === r.pw[1] ? '戰鬥力相同，平手' : r.pw[0] > r.pw[1] ? `你贏了這場戰鬥，差值 ${r.pw[0] - r.pw[1]}` : `你輸了這場戰鬥，差值 ${r.pw[1] - r.pw[0]}`;
-    return `<div class="tt">戰鬥結算</div><div>${txt}。你受到 ${r.d[0]} 點、對手受到 ${r.d[1]} 點傷害，扣除的生命牌加入手牌。</div><div class="acts"><button class="btn primary" data-act="next">回合結束</button></div>`;
+    return `<div class="tt">戰鬥結算</div><div>${txt}。你受到 ${r.d[0]} 點、對手受到 ${r.d[1]} 點傷害，扣除的生命牌加入手牌。</div><div class="acts"><button class="btn primary" data-act="next">回合結束</button><span class="hint" style="align-self:center">2 秒後自動進入下一回合</span></div>`;
   }
   return '';
 }
@@ -176,7 +179,7 @@ function renderInspector() {
     let why = where === 'oppfield' ? '對手的卡' : whyNot(0, where, card, idx, G.step);
     if (where === 'field' && card.usedFx.includes(idx)) why = '本回合已發動過此效果';
     const ok = !why;
-    acts += `<div class="act"><div class="line"><b class="tag ${fx.type}">${TN[fx.type]}</b><span>${costHTML(fx.cost)}：${esc(fx.body)}${fx.type === 'instant' ? `<span class="hint">（${fx.interferable ? '可被干擾' : '不可被干擾'}）</span>` : ''}</span></div>
+    acts += `<div class="act"><div class="line"><b class="tag ${fx.type}">${TN[fx.type]}</b><span>${costHTML(where === 'oppfield' ? fx.cost : effCost(fx, where))}：${esc(fx.body)}${fx.type === 'instant' ? `<span class="hint">（${fx.interferable ? '可被干擾' : '不可被干擾'}）</span>` : ''}</span></div>
       <div class="go"><span class="state ${ok ? 'ok' : 'no'}">${ok ? '可發動' : '無法發動：' + why}</span>${where === 'oppfield' ? '' : `<button data-act="fx" data-uid="${card.uid}" data-where="${where}" data-idx="${idx}" ${ok ? '' : 'disabled'}>發動</button>`}</div></div>`;
   });
   box.innerHTML = `<div class="insp-top">${cardHTML(card, { size: 's' })}<div class="insp-meta"><h3>${esc(card.name)}</h3><span>${whereTxt}</span><span>編號 <b>${card.id}</b>・${card.race}</span><span>召喚 <b>${CN[card.color]} ${card.cost}</b>・攻擊力 <b>${card.atk}</b></span>${where === 'hand' ? '<span>從手牌發動效果只能擇一，用完進棄牌堆</span>' : ''}${where === 'field' ? '<span>戰場角色的效果都可發動，能量從手牌支付</span>' : ''}</div></div>${acts}`;
@@ -284,12 +287,12 @@ function builderHTML() {
   </div></div>`;
 }
 function rulesHTML() {
-  return `<div class="veil" data-act="close"><div class="dlg" role="dialog" style="max-width:1000px"><h2>規則 v1.0.2（遊戲實作版本）</h2><p class="d">下面是程式實際依照的規則，<span class="note">標金色</span>的是規則沒寫明、目前先這樣做的地方。</p>
+  return `<div class="veil" data-act="close"><div class="dlg" role="dialog" style="max-width:1000px"><h2>規則 v1.0.3（遊戲實作版本）</h2><p class="d">下面是程式實際依照的規則，<span class="note">標金色</span>的是規則沒寫明、目前先這樣做的地方。</p>
   <div class="rules">
     <h3>準備</h3><ul><li>牌組 20 張，同編號不重複。主角不計入牌組，生命 6。</li><li>洗牌後抽 6 張為生命牌堆，再抽 5 張為起始手牌。</li><li>猜拳贏的人第 1 回合先攻，之後每回合交換。</li></ul>
     <h3>回合開始</h3><ul><li>雙方各抽 2 張，第 1 回合不抽。牌庫空了就從生命牌堆抽。</li></ul>
     <h3>召喚</h3><ul><li>雙方同時蓋 1 張角色，同時翻開。每回合一定要召喚。</li><li>召喚費用用與角色同色的手牌支付，付完進入棄牌堆。</li><li>手牌付不出任何角色時執行【無法召喚規則】：翻開牌庫頂強制出戰，費用依序由牌庫頂、手牌、生命牌支付。</li></ul>
-    <h3>能量與消耗區</h3><ul><li>發動效果的能量一律從手牌支付：先把手牌「轉為能量」，橫置在消耗區，再按「發動」。</li><li>費用中的「灰」可用任意顏色支付。</li><li>轉成能量但還沒支付的牌，在輪到你操作時可以按「返回」拿回手牌。</li><li>回合結束時，消耗區和戰場的牌都進入棄牌堆。</li><li class="note">轉成能量但沒用完的牌，同樣在回合結束時進入棄牌堆。</li></ul>
+    <h3>能量與消耗區</h3><ul><li>發動效果的能量一律從手牌支付：先把手牌「轉為能量」，橫置在消耗區，再按「發動」。</li><li>戰鬥階段開始時，雙方各得 1 點「回合能量」（任意色），放在消耗區，回合結束時消失。</li><li>費用中的「灰」可用任意顏色支付。</li><li>轉成能量但還沒支付的牌，在輪到你操作時可以按「返回」拿回手牌。</li><li>回合結束時，消耗區和戰場的牌都進入棄牌堆。</li><li class="note">轉成能量但沒用完的牌，同樣在回合結束時進入棄牌堆。</li></ul>
     <h3>效果</h3><ul><li>從手牌發動：只能擇一效果，發動後該卡進入棄牌堆。</li><li>從戰場角色發動：兩個效果都可發動，各一次。</li><li>每回合每人：魔法效果 1 次、立即效果 1 次。</li><li>干擾只能回應對手的魔法或立即效果；每個效果最多被干擾 1 次，干擾不能被回應，效果不能連鎖。</li><li class="note">立即效果卡面寫「可被干擾」才能被干擾，沒寫的視為不可被干擾。</li><li class="note">立即效果目前只能在自己的行動步驟發動。</li></ul>
     <h3>戰鬥</h3><ul><li>先攻行動 → 後攻干擾 → 後攻行動 → 先攻干擾 → 結算。</li><li>最終戰鬥力 = 攻擊力 + 修正，最低 0。輸的一方扣差值張生命牌，平手各扣 1 張，扣掉的加入手牌。</li><li>「敵方單位傷害-N」：本回合自己受到的戰鬥傷害減少 N。</li></ul>
     <h3>回合結束與勝負</h3><ul><li>手牌超過 7 張要棄到 7 張。</li><li>生命牌歸 0 敗北，雙方同時歸 0 平手。</li></ul>
@@ -341,7 +344,7 @@ document.addEventListener('click', async ev => {
   if (a === 'end' && (pend.kind === 'action' || pend.kind === 'response')) { answer(null); return; }
   if (a === 'next' && pend.kind === 'next') { answer(true); return; }
   if (a === 'forced' && pend.kind === 'summon') { answer({ forced: true }); return; }
-  if (a === 'unenergy' && (pend.kind === 'action' || pend.kind === 'response')) { const e = P(0).consume.find(x => x.card.uid === +t.dataset.uid); if (e && undoEnergy(0, e)) render(); return; }
+  if (a === 'unenergy' && (pend.kind === 'action' || pend.kind === 'response')) { const e = P(0).consume.find(x => x.card && x.card.uid === +t.dataset.uid); if (e && undoEnergy(0, e)) render(); return; }
   if (a === 'energy' && (pend.kind === 'action' || pend.kind === 'response')) { const f = findCard(t.dataset.uid); if (f && f.where === 'hand') { toEnergy(0, f.card); sel = null; render(); } return; }
   if (a === 'summon' && pend.kind === 'summon') {
     const f = findCard(t.dataset.uid); if (!f) return; const unit = f.card, me = P(0);

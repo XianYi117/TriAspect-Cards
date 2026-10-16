@@ -17,7 +17,7 @@ const N = +process.argv[2] || 400;
     turns.push(E.G.turn);
     const k = names[a]; byDeck[k] = byDeck[k] || { 勝: 0, 局: 0 }; byDeck[k].局++; if (!o.draw && o.winner === 0) byDeck[k].勝++;
     for (const p of E.G.pl) {
-      const n = p.deck.length + p.life.length + p.hand.length + p.discard.length + (p.field ? 1 : 0) + p.consume.length;
+      const n = p.deck.length + p.life.length + p.hand.length + p.discard.length + (p.field ? 1 : 0) + p.consume.filter(e => e.card).length;
       if (n !== 20) console.log(`第 ${g} 局張數錯誤：${n}`);
     }
   }

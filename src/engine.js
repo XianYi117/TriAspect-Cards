@@ -164,7 +164,35 @@ function payFromPool(i, cost) {
 
 // ---- 可否召喚 ----
 // RULES.summon：'same' = 召喚費用全部要同色（現行規則）；'oneSame' = 至少 1 張同色，其餘任意色（測試用）
-const RULES = { summon: 'same' };
+// freeEnergy：戰鬥階段開始時雙方各得幾點任意色能量（v1.0.3 起為 1，用來提高效果使用率）
+const RULES = { summon: 'same', fieldDiscount: 0, freeEnergy: 1, modBonus: 0 };
+// 實際要付的效果費用：戰場角色發動時可依 RULES.fieldDiscount 減免（先減灰，再減有色）
+function effCost(fx, where) {
+  const c = fullCost(fx.cost); let d = where === 'field' ? RULES.fieldDiscount : 0;
+  for (const k of ['X', 'R', 'G', 'B']) { const t = Math.min(d, c[k]); c[k] -= t; d -= t; }
+  return c;
+}
+const modN = op => op.n + RULES.modBonus;
+// 把整個手牌都轉成能量的話，付不付得起（用來判斷要不要停下來問玩家）
+function canEverPay(i, cost, exclude) {
+  const p = P(i);
+  return !!planFrom([...unspent(p), ...p.hand.filter(c => c !== exclude).map(c => ({ color: c.color, wild: c.wild }))], cost);
+}
+function actionCandidates(i) {
+  const p = P(i), out = [];
+  const consider = (where, card) => card.fxP.forEach((fx, idx) => {
+    if (!fx.supported || fx.type === 'inter') return;
+    if (where === 'field' && (card.usedFx.includes(idx) || (fx.type === 'magic' && p.flags.sealed))) return;
+    if (fx.type === 'magic' && p.flags.magic) return;
+    if (fx.type === 'instant' && (p.flags.instant || p.flags.noInstant)) return;
+    if (fx.ops.some(o => o.op === 'copy') && !copyOptions().length) return;
+    if (!canEverPay(i, effCost(fx, where), where === 'hand' ? card : null)) return;
+    out.push({ where, card, idx });
+  });
+  p.hand.forEach(c => consider('hand', c));
+  if (p.field) consider('field', p.field);
+  return out;
+}
 const sameColor = (c, card) => c.color === card.color || c.wild;
 function canSummon(p, card) {
   const others = p.hand.filter(c => c !== card);
@@ -203,7 +231,8 @@ function whyNot(i, where, card, idx, win) {
     if (fx.ops.some(o => o.op === 'negate' && o.magicOnly) && win.target.fx.type !== 'magic') return '只能無效魔法效果';
   } else return '現在不能發動';
   if (fx.ops.some(o => o.op === 'copy') && !copyOptions().length) return '場上沒有可複製的效果';
-  if (!planFrom(unspent(p), fx.cost)) return '需要 ' + shortfall(p, fx.cost);
+  const cost = effCost(fx, where);
+  if (!planFrom(unspent(p), cost)) return '需要 ' + shortfall(p, cost);
   return '';
 }
 
@@ -219,11 +248,11 @@ async function pick(i, cards, n, title, desc) {
 // ---- 發動與結算 ----
 async function activate(i, where, card, idx) {
   const p = P(i), fx = card.fxP[idx];
-  payFromPool(i, fx.cost);
+  payFromPool(i, effCost(fx, where));
   if (where === 'hand') { removeFrom(p.hand, card); p.discard.push(card); } else card.usedFx.push(idx);
   if (fx.type === 'magic') p.flags.magic = true;
   if (fx.type === 'instant') p.flags.instant = true;
-  log(`${p.name} 從${where === 'hand' ? '手牌' : '戰場'}發動【${card.name}】${TN[fx.type]}效果（${costText(fx.cost)}）：${fx.body}`, i);
+  log(`${p.name} 從${where === 'hand' ? '手牌' : '戰場'}發動【${card.name}】${TN[fx.type]}效果（${costText(effCost(fx, where))}）：${fx.body}`, i);
   IO.render();
   return { owner: i, card, fx, where, negated: false };
 }
@@ -244,7 +273,8 @@ async function runEffect(E) {
   if (E.fx.interferable) {
     const prev = G.step;
     G.step = { type: 'response', who: o, target: E };
-    if (responseCandidates(o, E).length) {
+    const cands = responseCandidates(o, E).filter(c => P(o).ai || canEverPay(o, effCost(c.fx, c.where), c.where === 'hand' ? c.card : null));
+    if (cands.length) {
       const d = P(o).ai ? await aiResponse(o, E) : await IO.ask('response', { target: E });
       if (d && !G.over) {
         const I = await activate(o, d.where, d.card, d.idx);
@@ -282,9 +312,9 @@ async function payExtra(i, cost) {
 async function doOp(E, op, target) {
   const i = E.owner, me = P(i), o = opp(i), them = P(o);
   switch (op.op) {
-    case 'buff': me.flags.mod += op.n; log(`${me.name} 的戰場角色攻擊力 +${op.n}`, i); break;
-    case 'debuff': them.flags.mod -= op.n; log(`${them.name} 的戰場角色攻擊力 -${op.n}`, i); break;
-    case 'reduce': me.flags.reduce += op.n; log(`本回合 ${them.name} 的角色對 ${me.name} 造成的傷害 -${op.n}`, i); break;
+    case 'buff': me.flags.mod += modN(op); log(`${me.name} 的戰場角色攻擊力 +${modN(op)}`, i); break;
+    case 'debuff': them.flags.mod -= modN(op); log(`${them.name} 的戰場角色攻擊力 -${modN(op)}`, i); break;
+    case 'reduce': me.flags.reduce += modN(op); log(`本回合 ${them.name} 的角色對 ${me.name} 造成的傷害 -${modN(op)}`, i); break;
     case 'draw': draw(i, op.n); log(`${me.name} 抽 ${op.n} 張牌`, i); break;
     case 'drawDiscard': { draw(i, 2); const c = await pick(i, me.hand, 1, '選擇要棄掉的 1 張牌', '抽 2 張後棄 1 張'); c.forEach(x => { removeFrom(me.hand, x); me.discard.push(x); }); log(`${me.name} 抽 2 張，棄掉 1 張`, i); break; }
     case 'drawReturn': { draw(i, 2); const c = await pick(i, me.hand, 1, '選擇放回牌庫頂的 1 張牌', '抽 2 張後放回 1 張'); c.forEach(x => { removeFrom(me.hand, x); me.deck.push(x); }); log(`${me.name} 抽 2 張，放回 1 張到牌庫頂`, i); break; }
@@ -326,7 +356,7 @@ async function summonPhase() {
   const choices = await Promise.all([decide(0), decide(1)]);
   G.phase = 'reveal';
   for (let i = 0; i < 2; i++) await doSummon(i, choices[i]);
-  IO.render(); await IO.sleep(500);
+  IO.render(); await IO.sleep(350);
 }
 async function doSummon(i, ch) {
   const p = P(i);
@@ -353,6 +383,7 @@ async function actionWindow(i) {
   G.step = { type: 'action', who: i };
   IO.render();
   while (!G.over) {
+    if (!P(i).ai && !actionCandidates(i).length) { log(`${P(i).name} 沒有可發動的效果`, i); IO.render(); await IO.sleep(400); break; }
     const d = P(i).ai ? await aiAction(i) : await IO.ask('action', { who: i });
     if (!d) break;
     const E = await activate(i, d.where, d.card, d.idx);
@@ -388,7 +419,7 @@ async function endPhase() {
       log(`${p.name} 手牌超過上限，棄掉 ${n} 張`, i);
     }
     if (p.field) p.discard.push(p.field);
-    p.consume.forEach(e => p.discard.push(e.card));
+    p.consume.forEach(e => e.card && p.discard.push(e.card));
     p.field = null; p.consume = []; p.flags = freshFlags();
     p.hand.forEach(c => (c.wild = false));
   }
@@ -398,9 +429,10 @@ async function endPhase() {
 async function gameLoop() {
   while (!G.over) {
     log(`── 第 ${G.turn} 回合，先攻：${P(G.first).name} ──`, 'turn');
-    if (G.turn > 1) { G.phase = 'draw'; draw(0, 2); draw(1, 2); log('雙方各抽 2 張', 'sys'); IO.render(); if (checkOver()) break; await IO.sleep(300); }
+    if (G.turn > 1) { G.phase = 'draw'; draw(0, 2); draw(1, 2); log('雙方各抽 2 張', 'sys'); IO.render(); if (checkOver()) break; await IO.sleep(150); }
     await summonPhase(); if (checkOver()) break;
     G.phase = 'battle';
+    if (RULES.freeEnergy) { G.pl.forEach(p => { for (let k = 0; k < RULES.freeEnergy; k++) p.consume.push({ card: null, color: 'X', wild: true, spent: false, token: true }); }); log(`雙方各獲得 ${RULES.freeEnergy} 點任意色能量`, 'sys'); }
     await actionWindow(G.first); if (G.over) break;
     await actionWindow(opp(G.first)); if (G.over) break;
     await settle(); if (G.over) break;
@@ -443,9 +475,9 @@ function dmgWith(i, modMe, modOpp, redMe) {
 function aiOpValue(i, op) {
   const me = P(i), o = P(opp(i)), base = dmgWith(i, 0, 0, 0);
   switch (op.op) {
-    case 'buff': { const a = dmgWith(i, op.n, 0, 0); return (a.opp - base.opp) + (base.me - a.me) + 0.3 * op.n; }
-    case 'debuff': { const a = dmgWith(i, 0, -op.n, 0); return (a.opp - base.opp) + (base.me - a.me) + 0.3 * op.n; }
-    case 'reduce': return Math.min(op.n, base.me) + 0.15;
+    case 'buff': { const a = dmgWith(i, modN(op), 0, 0); return (a.opp - base.opp) + (base.me - a.me) + 0.3 * modN(op); }
+    case 'debuff': { const a = dmgWith(i, 0, -modN(op), 0); return (a.opp - base.opp) + (base.me - a.me) + 0.3 * modN(op); }
+    case 'reduce': return Math.min(modN(op), base.me) + 0.15;
     case 'draw': return 0.8 * op.n;
     case 'drawDiscard': return 0.7;
     case 'drawReturn': return 0.5;
@@ -463,7 +495,7 @@ function aiOpValue(i, op) {
 }
 function aiFxValue(i, fx) { return fx.ops.reduce((s, op) => s + aiOpValue(i, op), 0); }
 async function aiAction(i) {
-  await IO.sleep(650);
+  await IO.sleep(350);
   const p = P(i), win = { type: 'action', who: i };
   const w = p.hand.length >= 7 ? 0.3 : 0.6;
   let best = null;
@@ -473,7 +505,7 @@ async function aiAction(i) {
     if (fx.type === 'magic' && p.flags.magic) return;
     if (fx.type === 'instant' && (p.flags.instant || p.flags.noInstant)) return;
     if (fx.ops.some(o => o.op === 'copy') && !copyOptions().length) return;
-    const plan = aiPlan(i, fx.cost, where === 'hand' ? card : null);
+    const plan = aiPlan(i, effCost(fx, where), where === 'hand' ? card : null);
     if (!plan) return;
     const net = aiFxValue(i, fx) - (plan.cards.length + (where === 'hand' ? 1 : 0)) * w;
     if (net > 0.2 && (!best || net > best.net)) best = { where, card, idx, plan, net };
@@ -486,12 +518,12 @@ async function aiAction(i) {
   return best;
 }
 async function aiResponse(o, E) {
-  await IO.sleep(500);
+  await IO.sleep(250);
   const p = P(o), harm = aiFxValue(E.owner, E.fx), t = P(E.owner);
   const w = p.hand.length >= 7 ? 0.3 : 0.6;
   let best = null;
   for (const c of responseCandidates(o, E)) {
-    const plan = aiPlan(o, c.fx.cost, c.where === 'hand' ? c.card : null);
+    const plan = aiPlan(o, effCost(c.fx, c.where), c.where === 'hand' ? c.card : null);
     if (!plan) continue;
     let v = 0;
     for (const op of c.fx.ops) {
@@ -530,4 +562,4 @@ function buildDeck(colors) {
   for (const [cost, n] of [[1, 9], [2, 8], [3, MAX_COST3]]) out.push(...shuffle(all.filter(c => colors.includes(c.color) && c.cost === cost)).slice(0, n));
   return out.map(c => c.id);
 }
-if (typeof module !== 'undefined') module.exports = { IO, RULES, loadData, newGame, gameLoop, buildDeck, get G() { return G; }, get LEADERS() { return LEADERS; }, DEFS: () => DEFS, parseFx };
+if (typeof module !== 'undefined') module.exports = { IO, RULES, loadData, effCost, newGame, gameLoop, buildDeck, get G() { return G; }, get LEADERS() { return LEADERS; }, DEFS: () => DEFS, parseFx };

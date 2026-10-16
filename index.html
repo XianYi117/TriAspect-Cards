@@ -193,7 +193,7 @@ label.tog{font-size:11.5px;color:var(--mute);display:flex;gap:4px;align-items:ce
 </style>
 
 <header class="top">
-  <div class="brand"><span class="brand-name">TriAspect</span><span class="ver">Cards · 規則 v1.0.2</span></div>
+  <div class="brand"><span class="brand-name">TriAspect</span><span class="ver">Cards · 規則 v1.0.3</span></div>
   <div class="turnline" id="turnline"></div>
   <div class="top-act">
     <button class="btn" id="btnRules" data-act="rules">規則</button>
@@ -409,7 +409,35 @@ function payFromPool(i, cost) {
 
 // ---- 可否召喚 ----
 // RULES.summon：'same' = 召喚費用全部要同色（現行規則）；'oneSame' = 至少 1 張同色，其餘任意色（測試用）
-const RULES = { summon: 'same' };
+// freeEnergy：戰鬥階段開始時雙方各得幾點任意色能量（v1.0.3 起為 1，用來提高效果使用率）
+const RULES = { summon: 'same', fieldDiscount: 0, freeEnergy: 1, modBonus: 0 };
+// 實際要付的效果費用：戰場角色發動時可依 RULES.fieldDiscount 減免（先減灰，再減有色）
+function effCost(fx, where) {
+  const c = fullCost(fx.cost); let d = where === 'field' ? RULES.fieldDiscount : 0;
+  for (const k of ['X', 'R', 'G', 'B']) { const t = Math.min(d, c[k]); c[k] -= t; d -= t; }
+  return c;
+}
+const modN = op => op.n + RULES.modBonus;
+// 把整個手牌都轉成能量的話，付不付得起（用來判斷要不要停下來問玩家）
+function canEverPay(i, cost, exclude) {
+  const p = P(i);
+  return !!planFrom([...unspent(p), ...p.hand.filter(c => c !== exclude).map(c => ({ color: c.color, wild: c.wild }))], cost);
+}
+function actionCandidates(i) {
+  const p = P(i), out = [];
+  const consider = (where, card) => card.fxP.forEach((fx, idx) => {
+    if (!fx.supported || fx.type === 'inter') return;
+    if (where === 'field' && (card.usedFx.includes(idx) || (fx.type === 'magic' && p.flags.sealed))) return;
+    if (fx.type === 'magic' && p.flags.magic) return;
+    if (fx.type === 'instant' && (p.flags.instant || p.flags.noInstant)) return;
+    if (fx.ops.some(o => o.op === 'copy') && !copyOptions().length) return;
+    if (!canEverPay(i, effCost(fx, where), where === 'hand' ? card : null)) return;
+    out.push({ where, card, idx });
+  });
+  p.hand.forEach(c => consider('hand', c));
+  if (p.field) consider('field', p.field);
+  return out;
+}
 const sameColor = (c, card) => c.color === card.color || c.wild;
 function canSummon(p, card) {
   const others = p.hand.filter(c => c !== card);
@@ -448,7 +476,8 @@ function whyNot(i, where, card, idx, win) {
     if (fx.ops.some(o => o.op === 'negate' && o.magicOnly) && win.target.fx.type !== 'magic') return '只能無效魔法效果';
   } else return '現在不能發動';
   if (fx.ops.some(o => o.op === 'copy') && !copyOptions().length) return '場上沒有可複製的效果';
-  if (!planFrom(unspent(p), fx.cost)) return '需要 ' + shortfall(p, fx.cost);
+  const cost = effCost(fx, where);
+  if (!planFrom(unspent(p), cost)) return '需要 ' + shortfall(p, cost);
   return '';
 }
 
@@ -464,11 +493,11 @@ async function pick(i, cards, n, title, desc) {
 // ---- 發動與結算 ----
 async function activate(i, where, card, idx) {
   const p = P(i), fx = card.fxP[idx];
-  payFromPool(i, fx.cost);
+  payFromPool(i, effCost(fx, where));
   if (where === 'hand') { removeFrom(p.hand, card); p.discard.push(card); } else card.usedFx.push(idx);
   if (fx.type === 'magic') p.flags.magic = true;
   if (fx.type === 'instant') p.flags.instant = true;
-  log(`${p.name} 從${where === 'hand' ? '手牌' : '戰場'}發動【${card.name}】${TN[fx.type]}效果（${costText(fx.cost)}）：${fx.body}`, i);
+  log(`${p.name} 從${where === 'hand' ? '手牌' : '戰場'}發動【${card.name}】${TN[fx.type]}效果（${costText(effCost(fx, where))}）：${fx.body}`, i);
   IO.render();
   return { owner: i, card, fx, where, negated: false };
 }
@@ -489,7 +518,8 @@ async function runEffect(E) {
   if (E.fx.interferable) {
     const prev = G.step;
     G.step = { type: 'response', who: o, target: E };
-    if (responseCandidates(o, E).length) {
+    const cands = responseCandidates(o, E).filter(c => P(o).ai || canEverPay(o, effCost(c.fx, c.where), c.where === 'hand' ? c.card : null));
+    if (cands.length) {
       const d = P(o).ai ? await aiResponse(o, E) : await IO.ask('response', { target: E });
       if (d && !G.over) {
         const I = await activate(o, d.where, d.card, d.idx);
@@ -527,9 +557,9 @@ async function payExtra(i, cost) {
 async function doOp(E, op, target) {
   const i = E.owner, me = P(i), o = opp(i), them = P(o);
   switch (op.op) {
-    case 'buff': me.flags.mod += op.n; log(`${me.name} 的戰場角色攻擊力 +${op.n}`, i); break;
-    case 'debuff': them.flags.mod -= op.n; log(`${them.name} 的戰場角色攻擊力 -${op.n}`, i); break;
-    case 'reduce': me.flags.reduce += op.n; log(`本回合 ${them.name} 的角色對 ${me.name} 造成的傷害 -${op.n}`, i); break;
+    case 'buff': me.flags.mod += modN(op); log(`${me.name} 的戰場角色攻擊力 +${modN(op)}`, i); break;
+    case 'debuff': them.flags.mod -= modN(op); log(`${them.name} 的戰場角色攻擊力 -${modN(op)}`, i); break;
+    case 'reduce': me.flags.reduce += modN(op); log(`本回合 ${them.name} 的角色對 ${me.name} 造成的傷害 -${modN(op)}`, i); break;
     case 'draw': draw(i, op.n); log(`${me.name} 抽 ${op.n} 張牌`, i); break;
     case 'drawDiscard': { draw(i, 2); const c = await pick(i, me.hand, 1, '選擇要棄掉的 1 張牌', '抽 2 張後棄 1 張'); c.forEach(x => { removeFrom(me.hand, x); me.discard.push(x); }); log(`${me.name} 抽 2 張，棄掉 1 張`, i); break; }
     case 'drawReturn': { draw(i, 2); const c = await pick(i, me.hand, 1, '選擇放回牌庫頂的 1 張牌', '抽 2 張後放回 1 張'); c.forEach(x => { removeFrom(me.hand, x); me.deck.push(x); }); log(`${me.name} 抽 2 張，放回 1 張到牌庫頂`, i); break; }
@@ -571,7 +601,7 @@ async function summonPhase() {
   const choices = await Promise.all([decide(0), decide(1)]);
   G.phase = 'reveal';
   for (let i = 0; i < 2; i++) await doSummon(i, choices[i]);
-  IO.render(); await IO.sleep(500);
+  IO.render(); await IO.sleep(350);
 }
 async function doSummon(i, ch) {
   const p = P(i);
@@ -598,6 +628,7 @@ async function actionWindow(i) {
   G.step = { type: 'action', who: i };
   IO.render();
   while (!G.over) {
+    if (!P(i).ai && !actionCandidates(i).length) { log(`${P(i).name} 沒有可發動的效果`, i); IO.render(); await IO.sleep(400); break; }
     const d = P(i).ai ? await aiAction(i) : await IO.ask('action', { who: i });
     if (!d) break;
     const E = await activate(i, d.where, d.card, d.idx);
@@ -633,7 +664,7 @@ async function endPhase() {
       log(`${p.name} 手牌超過上限，棄掉 ${n} 張`, i);
     }
     if (p.field) p.discard.push(p.field);
-    p.consume.forEach(e => p.discard.push(e.card));
+    p.consume.forEach(e => e.card && p.discard.push(e.card));
     p.field = null; p.consume = []; p.flags = freshFlags();
     p.hand.forEach(c => (c.wild = false));
   }
@@ -643,9 +674,10 @@ async function endPhase() {
 async function gameLoop() {
   while (!G.over) {
     log(`── 第 ${G.turn} 回合，先攻：${P(G.first).name} ──`, 'turn');
-    if (G.turn > 1) { G.phase = 'draw'; draw(0, 2); draw(1, 2); log('雙方各抽 2 張', 'sys'); IO.render(); if (checkOver()) break; await IO.sleep(300); }
+    if (G.turn > 1) { G.phase = 'draw'; draw(0, 2); draw(1, 2); log('雙方各抽 2 張', 'sys'); IO.render(); if (checkOver()) break; await IO.sleep(150); }
     await summonPhase(); if (checkOver()) break;
     G.phase = 'battle';
+    if (RULES.freeEnergy) { G.pl.forEach(p => { for (let k = 0; k < RULES.freeEnergy; k++) p.consume.push({ card: null, color: 'X', wild: true, spent: false, token: true }); }); log(`雙方各獲得 ${RULES.freeEnergy} 點任意色能量`, 'sys'); }
     await actionWindow(G.first); if (G.over) break;
     await actionWindow(opp(G.first)); if (G.over) break;
     await settle(); if (G.over) break;
@@ -688,9 +720,9 @@ function dmgWith(i, modMe, modOpp, redMe) {
 function aiOpValue(i, op) {
   const me = P(i), o = P(opp(i)), base = dmgWith(i, 0, 0, 0);
   switch (op.op) {
-    case 'buff': { const a = dmgWith(i, op.n, 0, 0); return (a.opp - base.opp) + (base.me - a.me) + 0.3 * op.n; }
-    case 'debuff': { const a = dmgWith(i, 0, -op.n, 0); return (a.opp - base.opp) + (base.me - a.me) + 0.3 * op.n; }
-    case 'reduce': return Math.min(op.n, base.me) + 0.15;
+    case 'buff': { const a = dmgWith(i, modN(op), 0, 0); return (a.opp - base.opp) + (base.me - a.me) + 0.3 * modN(op); }
+    case 'debuff': { const a = dmgWith(i, 0, -modN(op), 0); return (a.opp - base.opp) + (base.me - a.me) + 0.3 * modN(op); }
+    case 'reduce': return Math.min(modN(op), base.me) + 0.15;
     case 'draw': return 0.8 * op.n;
     case 'drawDiscard': return 0.7;
     case 'drawReturn': return 0.5;
@@ -708,7 +740,7 @@ function aiOpValue(i, op) {
 }
 function aiFxValue(i, fx) { return fx.ops.reduce((s, op) => s + aiOpValue(i, op), 0); }
 async function aiAction(i) {
-  await IO.sleep(650);
+  await IO.sleep(350);
   const p = P(i), win = { type: 'action', who: i };
   const w = p.hand.length >= 7 ? 0.3 : 0.6;
   let best = null;
@@ -718,7 +750,7 @@ async function aiAction(i) {
     if (fx.type === 'magic' && p.flags.magic) return;
     if (fx.type === 'instant' && (p.flags.instant || p.flags.noInstant)) return;
     if (fx.ops.some(o => o.op === 'copy') && !copyOptions().length) return;
-    const plan = aiPlan(i, fx.cost, where === 'hand' ? card : null);
+    const plan = aiPlan(i, effCost(fx, where), where === 'hand' ? card : null);
     if (!plan) return;
     const net = aiFxValue(i, fx) - (plan.cards.length + (where === 'hand' ? 1 : 0)) * w;
     if (net > 0.2 && (!best || net > best.net)) best = { where, card, idx, plan, net };
@@ -731,12 +763,12 @@ async function aiAction(i) {
   return best;
 }
 async function aiResponse(o, E) {
-  await IO.sleep(500);
+  await IO.sleep(250);
   const p = P(o), harm = aiFxValue(E.owner, E.fx), t = P(E.owner);
   const w = p.hand.length >= 7 ? 0.3 : 0.6;
   let best = null;
   for (const c of responseCandidates(o, E)) {
-    const plan = aiPlan(o, c.fx.cost, c.where === 'hand' ? c.card : null);
+    const plan = aiPlan(o, effCost(c.fx, c.where), c.where === 'hand' ? c.card : null);
     if (!plan) continue;
     let v = 0;
     for (const op of c.fx.ops) {
@@ -775,7 +807,7 @@ function buildDeck(colors) {
   for (const [cost, n] of [[1, 9], [2, 8], [3, MAX_COST3]]) out.push(...shuffle(all.filter(c => colors.includes(c.color) && c.cost === cost)).slice(0, n));
   return out.map(c => c.id);
 }
-if (typeof module !== 'undefined') module.exports = { IO, RULES, loadData, newGame, gameLoop, buildDeck, get G() { return G; }, get LEADERS() { return LEADERS; }, DEFS: () => DEFS, parseFx };
+if (typeof module !== 'undefined') module.exports = { IO, RULES, loadData, effCost, newGame, gameLoop, buildDeck, get G() { return G; }, get LEADERS() { return LEADERS; }, DEFS: () => DEFS, parseFx };
 
 </script>
 <script>
@@ -796,7 +828,8 @@ function saveCustom(ids) { try { localStorage.setItem('deck-v102', JSON.stringif
 IO.sleep = ms => { const id = gameId; return new Promise(r => setTimeout(() => { if (id === gameId) r(); }, ms)); };
 IO.render = () => render();
 IO.onLog = () => {};
-IO.ask = (kind, ctx) => new Promise(res => { const id = gameId; pend = { kind, ctx, res, id }; if (kind === 'summon') sel = null; render(); });
+IO.ask = (kind, ctx) => new Promise(res => { const id = gameId; pend = { kind, ctx, res, id }; if (kind === 'summon') sel = null; render();
+  if (kind === 'next') setTimeout(() => { if (pend && pend.kind === 'next' && pend.id === id && !modal) answer(true); }, 2200); });
 IO.choose = opts => new Promise(res => { modal = { type: 'choose', ...opts, picked: opts.pre ? opts.pre.slice() : [], res }; render(); });
 function answer(v) { const p = pend; pend = null; sel = null; p.res(v); render(); }
 
@@ -821,7 +854,9 @@ function cardHTML(c, o = {}) {
   </div>`;
 }
 const backHTML = (size, attrs = '') => `<div class="card back ${size || ''}" style="background-image:url(${BACK})" ${attrs}></div>`;
-function tapHTML(e, undo) { return `<div class="tap ${e.wild ? 'cW' : 'c' + e.color} ${e.spent ? 'spent' : ''}" title="${esc(e.card.name)}"><b>${esc(e.card.name)}</b><span>${e.wild ? '任意色' : CN[e.color] + '色'}能量</span>${undo && !e.spent ? `<button class="undo" data-act="unenergy" data-uid="${e.card.uid}" title="返回手牌">↩ 返回</button>` : ''}</div>`; }
+function tapHTML(e, undo) {
+  if (e.token) return `<div class="tap cW ${e.spent ? 'spent' : ''}" title="回合能量"><b>回合能量</b><span>任意色・本回合</span></div>`;
+  return `<div class="tap ${e.wild ? 'cW' : 'c' + e.color} ${e.spent ? 'spent' : ''}" title="${esc(e.card.name)}"><b>${esc(e.card.name)}</b><span>${e.wild ? '任意色' : CN[e.color] + '色'}能量</span>${undo && !e.spent ? `<button class="undo" data-act="unenergy" data-uid="${e.card.uid}" title="返回手牌">↩ 返回</button>` : ''}</div>`; }
 function poolText(p) {
   const u = unspent(p); if (!p.consume.length) return '';
   const cnt = { R: 0, G: 0, B: 0, W: 0 }; u.forEach(e => cnt[e.wild ? 'W' : e.color]++);
@@ -921,7 +956,7 @@ function promptHTML() {
   if (pend.kind === 'next') {
     const r = G.result;
     const txt = r.pw[0] === r.pw[1] ? '戰鬥力相同，平手' : r.pw[0] > r.pw[1] ? `你贏了這場戰鬥，差值 ${r.pw[0] - r.pw[1]}` : `你輸了這場戰鬥，差值 ${r.pw[1] - r.pw[0]}`;
-    return `<div class="tt">戰鬥結算</div><div>${txt}。你受到 ${r.d[0]} 點、對手受到 ${r.d[1]} 點傷害，扣除的生命牌加入手牌。</div><div class="acts"><button class="btn primary" data-act="next">回合結束</button></div>`;
+    return `<div class="tt">戰鬥結算</div><div>${txt}。你受到 ${r.d[0]} 點、對手受到 ${r.d[1]} 點傷害，扣除的生命牌加入手牌。</div><div class="acts"><button class="btn primary" data-act="next">回合結束</button><span class="hint" style="align-self:center">2 秒後自動進入下一回合</span></div>`;
   }
   return '';
 }
@@ -957,7 +992,7 @@ function renderInspector() {
     let why = where === 'oppfield' ? '對手的卡' : whyNot(0, where, card, idx, G.step);
     if (where === 'field' && card.usedFx.includes(idx)) why = '本回合已發動過此效果';
     const ok = !why;
-    acts += `<div class="act"><div class="line"><b class="tag ${fx.type}">${TN[fx.type]}</b><span>${costHTML(fx.cost)}：${esc(fx.body)}${fx.type === 'instant' ? `<span class="hint">（${fx.interferable ? '可被干擾' : '不可被干擾'}）</span>` : ''}</span></div>
+    acts += `<div class="act"><div class="line"><b class="tag ${fx.type}">${TN[fx.type]}</b><span>${costHTML(where === 'oppfield' ? fx.cost : effCost(fx, where))}：${esc(fx.body)}${fx.type === 'instant' ? `<span class="hint">（${fx.interferable ? '可被干擾' : '不可被干擾'}）</span>` : ''}</span></div>
       <div class="go"><span class="state ${ok ? 'ok' : 'no'}">${ok ? '可發動' : '無法發動：' + why}</span>${where === 'oppfield' ? '' : `<button data-act="fx" data-uid="${card.uid}" data-where="${where}" data-idx="${idx}" ${ok ? '' : 'disabled'}>發動</button>`}</div></div>`;
   });
   box.innerHTML = `<div class="insp-top">${cardHTML(card, { size: 's' })}<div class="insp-meta"><h3>${esc(card.name)}</h3><span>${whereTxt}</span><span>編號 <b>${card.id}</b>・${card.race}</span><span>召喚 <b>${CN[card.color]} ${card.cost}</b>・攻擊力 <b>${card.atk}</b></span>${where === 'hand' ? '<span>從手牌發動效果只能擇一，用完進棄牌堆</span>' : ''}${where === 'field' ? '<span>戰場角色的效果都可發動，能量從手牌支付</span>' : ''}</div></div>${acts}`;
@@ -1065,12 +1100,12 @@ function builderHTML() {
   </div></div>`;
 }
 function rulesHTML() {
-  return `<div class="veil" data-act="close"><div class="dlg" role="dialog" style="max-width:1000px"><h2>規則 v1.0.2（遊戲實作版本）</h2><p class="d">下面是程式實際依照的規則，<span class="note">標金色</span>的是規則沒寫明、目前先這樣做的地方。</p>
+  return `<div class="veil" data-act="close"><div class="dlg" role="dialog" style="max-width:1000px"><h2>規則 v1.0.3（遊戲實作版本）</h2><p class="d">下面是程式實際依照的規則，<span class="note">標金色</span>的是規則沒寫明、目前先這樣做的地方。</p>
   <div class="rules">
     <h3>準備</h3><ul><li>牌組 20 張，同編號不重複。主角不計入牌組，生命 6。</li><li>洗牌後抽 6 張為生命牌堆，再抽 5 張為起始手牌。</li><li>猜拳贏的人第 1 回合先攻，之後每回合交換。</li></ul>
     <h3>回合開始</h3><ul><li>雙方各抽 2 張，第 1 回合不抽。牌庫空了就從生命牌堆抽。</li></ul>
     <h3>召喚</h3><ul><li>雙方同時蓋 1 張角色，同時翻開。每回合一定要召喚。</li><li>召喚費用用與角色同色的手牌支付，付完進入棄牌堆。</li><li>手牌付不出任何角色時執行【無法召喚規則】：翻開牌庫頂強制出戰，費用依序由牌庫頂、手牌、生命牌支付。</li></ul>
-    <h3>能量與消耗區</h3><ul><li>發動效果的能量一律從手牌支付：先把手牌「轉為能量」，橫置在消耗區，再按「發動」。</li><li>費用中的「灰」可用任意顏色支付。</li><li>轉成能量但還沒支付的牌，在輪到你操作時可以按「返回」拿回手牌。</li><li>回合結束時，消耗區和戰場的牌都進入棄牌堆。</li><li class="note">轉成能量但沒用完的牌，同樣在回合結束時進入棄牌堆。</li></ul>
+    <h3>能量與消耗區</h3><ul><li>發動效果的能量一律從手牌支付：先把手牌「轉為能量」，橫置在消耗區，再按「發動」。</li><li>戰鬥階段開始時，雙方各得 1 點「回合能量」（任意色），放在消耗區，回合結束時消失。</li><li>費用中的「灰」可用任意顏色支付。</li><li>轉成能量但還沒支付的牌，在輪到你操作時可以按「返回」拿回手牌。</li><li>回合結束時，消耗區和戰場的牌都進入棄牌堆。</li><li class="note">轉成能量但沒用完的牌，同樣在回合結束時進入棄牌堆。</li></ul>
     <h3>效果</h3><ul><li>從手牌發動：只能擇一效果，發動後該卡進入棄牌堆。</li><li>從戰場角色發動：兩個效果都可發動，各一次。</li><li>每回合每人：魔法效果 1 次、立即效果 1 次。</li><li>干擾只能回應對手的魔法或立即效果；每個效果最多被干擾 1 次，干擾不能被回應，效果不能連鎖。</li><li class="note">立即效果卡面寫「可被干擾」才能被干擾，沒寫的視為不可被干擾。</li><li class="note">立即效果目前只能在自己的行動步驟發動。</li></ul>
     <h3>戰鬥</h3><ul><li>先攻行動 → 後攻干擾 → 後攻行動 → 先攻干擾 → 結算。</li><li>最終戰鬥力 = 攻擊力 + 修正，最低 0。輸的一方扣差值張生命牌，平手各扣 1 張，扣掉的加入手牌。</li><li>「敵方單位傷害-N」：本回合自己受到的戰鬥傷害減少 N。</li></ul>
     <h3>回合結束與勝負</h3><ul><li>手牌超過 7 張要棄到 7 張。</li><li>生命牌歸 0 敗北，雙方同時歸 0 平手。</li></ul>
@@ -1122,7 +1157,7 @@ document.addEventListener('click', async ev => {
   if (a === 'end' && (pend.kind === 'action' || pend.kind === 'response')) { answer(null); return; }
   if (a === 'next' && pend.kind === 'next') { answer(true); return; }
   if (a === 'forced' && pend.kind === 'summon') { answer({ forced: true }); return; }
-  if (a === 'unenergy' && (pend.kind === 'action' || pend.kind === 'response')) { const e = P(0).consume.find(x => x.card.uid === +t.dataset.uid); if (e && undoEnergy(0, e)) render(); return; }
+  if (a === 'unenergy' && (pend.kind === 'action' || pend.kind === 'response')) { const e = P(0).consume.find(x => x.card && x.card.uid === +t.dataset.uid); if (e && undoEnergy(0, e)) render(); return; }
   if (a === 'energy' && (pend.kind === 'action' || pend.kind === 'response')) { const f = findCard(t.dataset.uid); if (f && f.where === 'hand') { toEnergy(0, f.card); sel = null; render(); } return; }
   if (a === 'summon' && pend.kind === 'summon') {
     const f = findCard(t.dataset.uid); if (!f) return; const unit = f.card, me = P(0);

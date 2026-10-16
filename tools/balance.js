@@ -8,8 +8,13 @@ const VARIANTS = {
   '他色效果費用→本色': d => d.fxP.forEach(f => { for (const k of ['R', 'G', 'B']) if (k !== d.color && f.cost[k]) { f.cost[d.color] += f.cost[k]; f.cost[k] = 0; } }),
   '他色效果費用→灰': d => d.fxP.forEach(f => { for (const k of ['R', 'G', 'B']) if (k !== d.color && f.cost[k]) { f.cost.X += f.cost[k]; f.cost[k] = 0; } }),
   '藍色角色攻擊力+1': d => { if (d.color === 'B') d.atk += 1; },
+  '藍色費用3攻擊力+1': d => { if (d.color === 'B' && d.cost === 3) d.atk += 1; },
+  '藍色費用2、3攻擊力+1': d => { if (d.color === 'B' && d.cost >= 2) d.atk += 1; },
+  '藍色抽牌效果多抽1張': d => { if (d.color === 'B') d.fxP.forEach(f => f.ops.forEach(o => { if (o.op === 'draw') o.n += 1; })); },
 };
 if (process.env.SUMMON === 'oneSame') E.RULES.summon = 'oneSame';
+for (const k of ['fieldDiscount', 'freeEnergy', 'modBonus']) if (process.env[k]) E.RULES[k] = +process.env[k];
+console.log('規則開關：', JSON.stringify(E.RULES));
 console.log('召喚規則：', E.RULES.summon === 'oneSame' ? '至少 1 張同色，其餘任意' : '全部同色（現行）');
 async function run(name) {
   E.loadData(JSON.parse(JSON.stringify(DATA)));
