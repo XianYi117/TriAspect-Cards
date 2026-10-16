@@ -209,7 +209,7 @@ let lastLogLen = -1;
 function renderLog() {
   if (G.log.length === lastLogLen) return; lastLogLen = G.log.length;
   const el = $('log');
-  el.innerHTML = G.log.map(l => `<div class="w${l.who}"><span class="t">T${l.t}</span><span>${esc(l.text)}</span></div>`).join('');
+  el.innerHTML = G.log.map(l => `<div class="w${l.who}"><span class="t">T${l.t}<br>${clock(l.ms)}</span><span>${esc(l.text)}</span></div>`).join('');
   el.scrollTop = el.scrollHeight;
 }
 
@@ -307,7 +307,7 @@ document.addEventListener('click', async ev => {
   if (a === 'close') { if (t.classList.contains('veil') && ev.target !== t) return; modal = null; render(); return; }
   if (a === 'dbg') { showOppHand = t.checked; render(); return; }
   if (a === 'copylog') {
-    const txt = G ? G.log.map(l => `[T${l.t}] ${l.text}`).join('\n') : '';
+    const txt = G ? [`開局時間：${new Date(G.startedAt).toLocaleString('zh-TW', { hour12: false })}`, ...G.log.map(l => `[T${l.t} ${clock(l.ms)}] ${l.text}`)].join('\n') : '';
     try { await navigator.clipboard.writeText(txt); t.textContent = '已複製'; } catch (e) { const r = document.createRange(); r.selectNodeContents($('log')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); t.textContent = '已選取，請按複製'; }
     setTimeout(() => (t.textContent = '複製紀錄'), 1600); return;
   }

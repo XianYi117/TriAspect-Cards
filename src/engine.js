@@ -75,12 +75,15 @@ function mkPlayer(name, leader, ids, ai) {
 function newGame(cfg) {
   UID = 0;
   G = { pl: [mkPlayer(cfg.names[0], cfg.leaders[0], cfg.decks[0], cfg.ai[0]), mkPlayer(cfg.names[1], cfg.leaders[1], cfg.decks[1], cfg.ai[1])],
-        turn: 1, first: cfg.first, phase: 'setup', step: null, over: null, log: [], result: null };
+        turn: 1, first: cfg.first, phase: 'setup', step: null, over: null, log: [], result: null, startedAt: Date.now(), turnStarts: [] };
   log(`對局開始：${G.pl[0].name}（${cfg.leaders[0].name}）對 ${G.pl[1].name}（${cfg.leaders[1].name}）`, 'sys');
   log(`雙方各抽 ${cfg.leaders[0].hp} 張作為生命牌堆、5 張起始手牌。猜拳由 ${G.pl[cfg.first].name} 第 1 回合先攻。`, 'sys');
   return G;
 }
-function log(text, who = 'sys') { const e = { t: G ? G.turn : 0, text, who }; G.log.push(e); IO.onLog(e); }
+function log(text, who = 'sys') { const e = { t: G ? G.turn : 0, ms: G && G.startedAt ? Date.now() - G.startedAt : 0, text, who }; G.log.push(e); IO.onLog(e); }
+// 毫秒轉成「分:秒」
+function clock(ms) { const sec = Math.floor(ms / 1000); return `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`; }
+function durText(ms) { const sec = Math.round(ms / 1000); return sec >= 60 ? `${Math.floor(sec / 60)} 分 ${sec % 60} 秒` : `${sec} 秒`; }
 const opp = i => 1 - i;
 const P = i => G.pl[i];
 
@@ -428,6 +431,7 @@ async function endPhase() {
 }
 async function gameLoop() {
   while (!G.over) {
+    G.turnStarts.push(Date.now());
     log(`── 第 ${G.turn} 回合，先攻：${P(G.first).name} ──`, 'turn');
     if (G.turn > 1) { G.phase = 'draw'; draw(0, 2); draw(1, 2); log('雙方各抽 2 張', 'sys'); IO.render(); if (checkOver()) break; await IO.sleep(150); }
     await summonPhase(); if (checkOver()) break;
@@ -441,7 +445,12 @@ async function gameLoop() {
     G.first = opp(G.first); G.turn++;
     if (G.turn > 60) { G.over = { draw: true }; log('超過 60 回合，判定平手', 'sys'); }
   }
-  G.phase = 'over'; IO.render();
+  G.phase = 'over';
+  const total = Date.now() - G.startedAt, turns = G.turnStarts.length;
+  const lens = G.turnStarts.map((t, k) => (G.turnStarts[k + 1] || Date.now()) - t);
+  G.duration = total;
+  log(`對局時間 ${durText(total)}，共 ${turns} 回合，平均每回合 ${durText(total / Math.max(1, turns))}（最長第 ${lens.indexOf(Math.max(...lens)) + 1} 回合 ${durText(Math.max(...lens))}）`, 'sys');
+  IO.render();
 }
 
 // ===== 電腦 AI =====
