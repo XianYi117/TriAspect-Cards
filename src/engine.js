@@ -103,6 +103,13 @@ function heal(i, n) {
   log(k ? `${p.name} 從棄牌堆頂回復 ${k} 張到生命牌堆（生命 ${p.life.length}）` : `${p.name} 的回復沒有效果（生命已滿或棄牌堆為空）`, i);
 }
 function removeFrom(arr, card) { const k = arr.indexOf(card); if (k >= 0) arr.splice(k, 1); return k >= 0; }
+function undoEnergy(i, entry) {
+  const p = P(i);
+  if (entry.spent || !removeFrom(p.consume, entry)) return false;
+  p.hand.push(entry.card);
+  log(`${p.name} 將【${entry.card.name}】從消耗區返回手牌`, i);
+  return true;
+}
 function toEnergy(i, card) {
   const p = P(i); removeFrom(p.hand, card);
   p.consume.push({ card, color: card.color, wild: card.wild, spent: false });
