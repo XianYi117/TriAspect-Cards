@@ -192,6 +192,48 @@ label.tog{font-size:11.5px;color:var(--mute);display:flex;gap:4px;align-items:ce
 .toast-bar{position:absolute;left:0;bottom:0;height:3px;background:var(--bad);animation:toastBar 5s linear forwards}
 @keyframes toastIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
 @keyframes toastBar{from{width:100%}to{width:0}}
+.brand-btn{background:none;border:0;padding:0;display:flex;align-items:baseline;gap:10px}
+.top-act .btn.cur{border-color:var(--brass);color:var(--brass)}
+/* 首頁：左側選單，右側大展示區（預設卡背，點選後顯示規則或圖鑑） */
+.home{position:relative;min-height:calc(100dvh - 26px);overflow:hidden}
+.home-glow{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 72% 30%,color-mix(in srgb,var(--R) 18%,transparent),transparent 34%),radial-gradient(circle at 62% 72%,color-mix(in srgb,var(--B) 18%,transparent),transparent 34%),radial-gradient(circle at 86% 64%,color-mix(in srgb,var(--G) 16%,transparent),transparent 32%)}
+.home-resume{position:absolute;top:6px;right:0;z-index:2;border-color:var(--brass);color:var(--brass)}
+.home-grid{position:relative;display:grid;grid-template-columns:minmax(260px,320px) minmax(0,1fr);gap:clamp(20px,4vw,48px);min-height:calc(100dvh - 26px);padding-block:20px;align-items:stretch}
+.home-menu{display:flex;flex-direction:column;justify-content:center;gap:14px;min-width:0}
+.home-title{margin:0;line-height:.95;display:flex;flex-direction:column}
+.ht1{font-family:var(--f-display);font-weight:700;font-size:clamp(44px,6vw,70px);color:var(--brass);letter-spacing:.02em;text-shadow:0 2px 24px #c9a35b33}
+.ht2{font-family:var(--f-num);font-weight:500;font-size:clamp(16px,2vw,20px);letter-spacing:.9em;color:var(--fg);margin-top:8px;padding-left:4px}
+.home-sub{margin:0;color:var(--mute);display:flex;align-items:center;gap:6px;font-size:14px}
+.home-sub .dot{margin-left:4px}
+.menu{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.mbtn{width:100%;text-align:left;background:var(--slab);border:1px solid var(--rule2);border-radius:10px;padding:12px 18px;display:flex;flex-direction:column;gap:2px;transition:transform .15s,border-color .15s}
+.mbtn b{font-family:var(--f-display);font-size:19px;font-weight:700}
+.mbtn small{color:var(--mute);font-size:12px}
+.mbtn:hover{border-color:var(--brass);transform:translateX(6px)}
+.mbtn.on{border-color:var(--brass);box-shadow:inset 3px 0 0 var(--brass)}
+.mbtn.primary{background:var(--brass);border-color:var(--brass);color:#1b1408}
+.mbtn.primary small{color:#3d2e12}
+.home-ver{margin-top:12px;font-size:12px;color:var(--mute);letter-spacing:.12em;display:flex;align-items:center;gap:8px}
+.beta{font-family:var(--f-num);font-weight:700;letter-spacing:.15em;border:1px solid var(--brass-dim);color:var(--brass);border-radius:4px;padding:0 6px}
+.home-stage{min-width:0;display:flex;flex-direction:column}
+.stage-cover{flex:1;display:grid;place-items:center}
+.stage-cover img{display:block;width:min(380px,70vw);max-width:100%;border-radius:16px;box-shadow:0 0 0 1px var(--brass-dim),0 30px 80px #000d;animation:floaty 7s ease-in-out infinite}
+@keyframes floaty{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-10px) rotate(1deg)}}
+.stage-pane{flex:1;background:color-mix(in srgb,var(--slab) 92%,transparent);border:1px solid var(--rule2);border-radius:12px;padding:18px 20px;margin-top:36px;overflow:auto;max-height:calc(100dvh - 100px)}
+.stage-pane h2{font-family:var(--f-display);color:var(--brass);font-size:24px;margin:0 0 4px}
+.stage-pane p.d{color:var(--mute);margin:0 0 12px}
+.dextabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.dextab{border:1px solid var(--rule2);background:var(--slab2);border-radius:8px;padding:6px 16px;font-family:var(--f-display);font-size:16px;display:flex;align-items:center;gap:6px}
+.dextab.on{border-color:var(--brass);color:var(--brass)}
+.dexsec{font-size:12px;letter-spacing:.14em;color:var(--mute);margin:14px 0 8px}
+.dexgrid{display:flex;flex-wrap:wrap;gap:14px}
+.dexgrid .card{--w:150px}
+.leaders{display:flex;flex-wrap:wrap;gap:10px}
+.leader{background:var(--slab2);border:1px solid var(--rule2);border-radius:8px;padding:8px 12px;min-width:140px}
+.leader b{font-family:var(--f-display);font-size:16px;display:block}
+.leader small{color:var(--mute)}
+@media (max-width:820px){.home-grid{grid-template-columns:1fr;min-height:0}.stage-pane{margin-top:0;max-height:none}.home-resume{position:static;margin-bottom:8px}}
+@media (prefers-reduced-motion:reduce){.stage-cover img{animation:none}}
 @media (max-width:1100px){.app{grid-template-columns:1fr}.intel{position:static}.handrow{grid-template-columns:1fr}}
 @media (max-width:640px){
   .side{grid-template-columns:1fr}.axis{grid-template-columns:1fr}.card{--w:104px}.card.l{--w:132px}.card.xs{--w:46px}.fieldslot{min-height:0}
@@ -200,17 +242,36 @@ label.tog{font-size:11.5px;color:var(--mute);display:flex;gap:4px;align-items:ce
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
-<header class="top">
-  <div class="brand"><span class="brand-name">TriAspect</span><span class="ver">Cards · 規則 v1.0.3</span></div>
+<section id="home" class="home" hidden>
+  <div class="home-glow" aria-hidden="true"></div>
+  <button class="btn home-resume" data-act="battle" id="btnContinue" hidden>返回對戰 ›</button>
+  <div class="home-grid">
+    <div class="home-menu">
+      <h1 class="home-title"><span class="ht1">TriAspect</span><span class="ht2">CARDS</span></h1>
+      <p class="home-sub"><i class="dot R"></i>紅<i class="dot G"></i>綠<i class="dot B"></i>藍・三相卡牌對戰</p>
+      <nav class="menu" aria-label="主選單">
+        <button class="mbtn primary" data-act="home-play"><b>開始對戰（電腦）</b><small>選擇主角與牌組後開戰</small></button>
+        <button class="mbtn" data-act="go-rules" id="mRules"><b>規則說明</b><small>回合流程與效果裁定</small></button>
+        <button class="mbtn" data-act="go-dex" id="mDex"><b>卡牌圖鑑</b><small>紅・藍・綠 全部角色</small></button>
+      </nav>
+      <div class="home-ver"><span class="beta">BETA</span>測試環境 v1.0.3</div>
+    </div>
+    <div class="home-stage" id="homeStage"></div>
+  </div>
+</section>
+
+<header class="top" id="topbar" hidden>
+  <div class="brand"><button class="brand-btn" data-act="home" title="回首頁"><span class="brand-name">TriAspect</span><span class="ver">Cards · Beta v1.0.3</span></button></div>
   <div class="turnline" id="turnline"></div>
   <div class="top-act">
-    <button class="btn" id="btnRules" data-act="rules">規則</button>
+    <button class="btn" data-act="home">首頁</button>
+    <button class="btn" data-act="rules">規則</button>
     <button class="btn" data-act="builder">自組牌組</button>
     <button class="btn" data-act="newgame">新對局</button>
   </div>
 </header>
 
-<main class="app">
+<main class="app" id="battleView" hidden>
   <section class="board">
     <div class="zone">
       <div class="zlabel"><span>敵方手牌區</span><b id="oppHandN"></b></div>
@@ -250,6 +311,7 @@ label.tog{font-size:11.5px;color:var(--mute);display:flex;gap:4px;align-items:ce
 <script>
 const DATA = __CARDS__;
 const BACK = "__BACK__";
+const BACK_LG = "__BACK_LG__";
 </script>
 <script>
 __ENGINE__

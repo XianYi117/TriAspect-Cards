@@ -67,6 +67,8 @@ function poolText(p) {
 // ---- 主繪製 ----
 function render() {
   if (!G) { renderModal(); return; }
+  $('btnContinue').hidden = !(G && !G.over);
+  if (view !== 'battle') { renderModal(); return; }
   const me = P(0), op = P(1);
   const phaseName = { setup: '準備', draw: '抽牌', summon: '召喚', reveal: '翻開', battle: '戰鬥', settle: '結算', end: '回合結束', over: '對局結束' }[G.phase] || '';
   $('turnline').innerHTML = `第<b>${G.turn}</b>回合 · ${phaseName} · 先攻 <b style="font-family:var(--f-body);font-size:13px">${P(G.first).name}</b>`;
@@ -239,11 +241,11 @@ function renderModal() {
       ${modal.cancelText ? `<button class="btn" data-act="pickcancel">${esc(modal.cancelText)}</button>` : ''}
       <button class="btn primary" data-act="pickok" ${ok ? '' : 'disabled'}>確定</button></div></div></div>`;
   } else if (modal.type === 'view') {
-    m.innerHTML = `<div class="veil" data-act="close"><div class="dlg" role="dialog"><h2>${esc(modal.title)}</h2><p class="d">${modal.cards.length ? '由舊到新排列，最右邊是棄牌堆頂。' : '目前是空的。'}</p>
-      <div class="pickgrid">${modal.cards.map(c => cardHTML(c, { size: 's' })).join('')}</div><div class="row"><button class="btn primary" data-act="close">關閉</button></div></div></div>`;
+    m.innerHTML = `<div class="veil" data-act="close"><div class="dlg" role="dialog" ${modal.size ? 'style="max-width:420px"' : ''}><h2>${esc(modal.title)}</h2><p class="d">${modal.note ? esc(modal.note) : modal.cards.length ? '由舊到新排列，最右邊是棄牌堆頂。' : '目前是空的。'}</p>
+      <div class="pickgrid" ${modal.size ? 'style="justify-content:center"' : ''}>${modal.cards.map(c => cardHTML(c, { size: modal.size || 's' })).join('')}</div><div class="row"><button class="btn primary" data-act="close">關閉</button></div></div></div>`;
   } else if (modal.type === 'setup') m.innerHTML = setupHTML();
   else if (modal.type === 'builder') m.innerHTML = builderHTML();
-  else if (modal.type === 'rules') m.innerHTML = rulesHTML();
+  else if (modal.type === 'rules') m.innerHTML = `<div class="veil" data-act="close"><div class="dlg" role="dialog" style="max-width:1000px">${rulesHTML()}<div class="row"><button class="btn primary" data-act="close">關閉</button></div></div></div>`;
 }
 
 // ---- 開局設定 ----
@@ -266,7 +268,7 @@ function setupHTML() {
     <div class="sec">猜拳決定先攻</div>
     <div class="rps">${hands.map((h, k) => `<button data-act="rps" data-k="${k}">${h}</button>`).join('')}</div>
     <div class="rpsres">${s.rps || ''}</div>
-    <div class="row"><span class="sp">單色牌組 17 張同色，另外 3 張從其他顏色的費用 1 隨機補</span>${G && !G.over ? '<button class="btn" data-act="close">取消</button>' : ''}<button class="btn primary" data-act="start" ${s.first === undefined ? 'disabled' : ''}>開始對戰</button></div>
+    <div class="row"><span class="sp">單色牌組 17 張同色，另外 3 張從其他顏色的費用 1 隨機補</span><button class="btn" data-act="setupcancel">取消</button><button class="btn primary" data-act="start" ${s.first === undefined ? 'disabled' : ''}>開始對戰</button></div>
   </div></div>`;
 }
 function startGame() {
@@ -300,7 +302,7 @@ function builderHTML() {
   </div></div>`;
 }
 function rulesHTML() {
-  return `<div class="veil" data-act="close"><div class="dlg" role="dialog" style="max-width:1000px"><h2>規則 v1.0.3（遊戲實作版本）</h2><p class="d">下面是程式實際依照的規則，<span class="note">標金色</span>的是規則沒寫明、目前先這樣做的地方。</p>
+  return `<h2>規則說明 v${VERSION}</h2><p class="d">下面是程式實際依照的規則，<span class="note">標金色</span>的是規則沒寫明、目前先這樣做的地方。</p>
   <div class="rules">
     <h3>準備</h3><ul><li>牌組 20 張，同編號不重複。主角不計入牌組，生命 6。</li><li>洗牌後抽 6 張為生命牌堆，再抽 5 張為起始手牌。</li><li>猜拳贏的人第 1 回合先攻，之後每回合交換。</li></ul>
     <h3>回合開始</h3><ul><li>雙方各抽 2 張，第 1 回合不抽。牌庫空了就從生命牌堆抽。</li></ul>
@@ -310,7 +312,7 @@ function rulesHTML() {
     <h3>戰鬥</h3><ul><li>先攻行動 → 後攻干擾 → 後攻行動 → 先攻干擾 → 結算。</li><li>最終戰鬥力 = 攻擊力 + 修正，最低 0。輸的一方扣差值張生命牌，平手各扣 1 張，扣掉的加入手牌。</li><li>「敵方單位傷害-N」：本回合自己受到的戰鬥傷害減少 N。</li></ul>
     <h3>回合結束與勝負</h3><ul><li>手牌超過 7 張要棄到 7 張。</li><li>生命牌歸 0 敗北，雙方同時歸 0 平手。</li></ul>
     <h3>特定效果</h3><ul><li>回復：棄牌堆頂的牌移回生命牌堆，不超過主角生命上限。</li><li>R15 直接傷害：生命牌移到棄牌堆。B11：生命牌照常加入手牌。</li><li>抽 2 放回 1：放回牌庫頂。B06：對手選 1 張放回牌庫底，再抽牌庫頂。</li><li>複製：場上費用 2 以下的魔法或立即效果，不另付費。</li><li>B18 禁止魔法：封印對手戰場角色的魔法效果，限本回合。</li><li>追加費用的干擾：付不出來，被干擾的效果就無效。</li></ul>
-  </div><div class="row"><button class="btn primary" data-act="close">關閉</button></div></div></div>`;
+  </div>`;
 }
 
 // ---- 事件 ----
@@ -325,8 +327,16 @@ document.addEventListener('click', async ev => {
     try { await navigator.clipboard.writeText(txt); t.textContent = '已複製'; } catch (e) { const r = document.createRange(); r.selectNodeContents($('log')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); t.textContent = '已選取，請按複製'; }
     setTimeout(() => (t.textContent = '複製紀錄'), 1600); return;
   }
+  if (a === 'home') { go('home'); return; }
+  if (a === 'battle') { go('battle'); return; }
+  if (a === 'go-rules') { homeTab = homeTab === 'rules' ? 'cover' : 'rules'; renderHome(); return; }
+  if (a === 'go-dex') { homeTab = homeTab === 'dex' ? 'cover' : 'dex'; renderHome(); return; }
+  if (a === 'dexcol') { dexColor = t.dataset.k; renderHome(); return; }
   if (a === 'rules') { modal = { type: 'rules' }; render(); return; }
-  if (a === 'newgame') { modal = newSetup(); render(); return; }
+  if (a === 'home-play') { go('battle'); modal = newSetup(); render(); return; }
+  if (a === 'setupcancel') { modal = null; if (!G) go('home'); else render(); return; }
+  if (a === 'dexcard') { const c = DEFS[t.dataset.id]; modal = { type: 'view', title: `${c.id} ${c.name}`, cards: [{ ...c, usedFx: [] }], size: 'xl', note: `${CN[c.color]}色・費用 ${c.cost}・${c.race}・攻擊力 ${c.atk}` }; render(); return; }
+  if (a === 'newgame') { go('battle'); modal = newSetup(); render(); return; }
   if (a === 'builder') { modal = { type: 'builder', picked: (loadCustom() || []).slice() }; render(); return; }
   if (a === 'setdeck') { modal.deck = t.dataset.k; render(); return; }
   if (a === 'setleader') { modal.leader = +t.dataset.k; render(); return; }
@@ -382,8 +392,36 @@ document.addEventListener('keydown', ev => {
 
 let lastSetup = null;
 function newSetup() { const l = lastSetup || { leader: 0, deck: loadCustom() ? 'custom' : 'R', aiLeader: 'rand', aiDeck: 'rand' }; if (l.deck === 'custom' && !loadCustom()) l.deck = 'R'; return { type: 'setup', ...l }; }
-modal = newSetup();
-renderEmptyBoard();
+// ---- 頁面切換：home 首頁（右側展示區：cover 卡背／rules 規則／dex 圖鑑）、battle 對戰 ----
+const VERSION = '1.0.3';
+let view = 'home', homeTab = 'cover', dexColor = 'R';
+function go(v) {
+  view = v;
+  $('home').hidden = v !== 'home';
+  $('topbar').hidden = v !== 'battle';
+  $('battleView').hidden = v !== 'battle';
+  if (v === 'home') renderHome();
+  else if (G) render(); else renderEmptyBoard();
+  window.scrollTo(0, 0);
+}
+function renderHome() {
+  $('btnContinue').hidden = !(G && !G.over);
+  $('mRules').classList.toggle('on', homeTab === 'rules');
+  $('mDex').classList.toggle('on', homeTab === 'dex');
+  const st = $('homeStage');
+  if (homeTab === 'rules') st.innerHTML = `<div class="stage-pane">${rulesHTML()}</div>`;
+  else if (homeTab === 'dex') st.innerHTML = `<div class="stage-pane">${dexHTML()}</div>`;
+  else st.innerHTML = `<div class="stage-cover"><img src="${BACK_LG}" alt="TriAspect Cards 卡背"></div>`;
+}
+function dexHTML() {
+  const tabs = [['R', '紅'], ['B', '藍'], ['G', '綠']];
+  const list = Object.values(DEFS).filter(c => c.color === dexColor).sort((x, y) => x.cost - y.cost || x.id.localeCompare(y.id));
+  return `<h2>卡牌圖鑑</h2><p class="d">資料來自卡表 v1.0.2，點卡牌可放大。</p>
+    <div class="dextabs">${tabs.map(([k, n]) => `<button class="dextab ${dexColor === k ? 'on' : ''}" data-act="dexcol" data-k="${k}"><i class="dot ${k}"></i>${n}色（${Object.values(DEFS).filter(c => c.color === k).length}）</button>`).join('')}</div>
+    ${[1, 2, 3].map(cost => `<div class="dexsec">費用 ${cost}</div><div class="dexgrid">${list.filter(c => c.cost === cost).map(c => `<button data-act="dexcard" data-id="${c.id}" style="background:none;border:0;padding:0">${cardHTML({ ...c, usedFx: [] }, { click: true })}</button>`).join('')}</div>`).join('')}
+    <div class="dexsec">主角</div><div class="leaders">${LEADERS.map(l => `<div class="leader"><b>${esc(l.name)}</b><small>${l.id}・${l.race}・生命 ${l.hp}・能力：暫無</small></div>`).join('')}</div>`;
+}
+go('home');
 function renderEmptyBoard() {
   $('turnline').textContent = '選好主角與牌組後開始對戰';
   $('oppHand').innerHTML = Array.from({ length: 5 }, () => backHTML('xs')).join('');
