@@ -1,4 +1,4 @@
-# TRIASPECT Cards
+# TriAspect Cards
 
 紅、綠、藍三色的網頁卡牌對戰遊戲，規則版本 v1.0.2。目前可以和電腦 AI 對戰；線上兩人對戰開發中。
 
@@ -6,7 +6,7 @@
 
 打開 `index.html` 就能玩，不需要安裝任何東西。開啟 GitHub Pages（Settings → Pages → Deploy from branch → `main` / root）後，網址是：
 
-https://xianyi117.github.io/element-card-battle/
+https://xianyi117.github.io/TriAspect-Cards/
 
 ## 專案結構
 
