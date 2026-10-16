@@ -236,26 +236,35 @@ function setupHTML() {
   const deckOpts = PRESETS.map(p => `<button class="opt ${s.deck === p.key ? 'on' : ''}" data-act="setdeck" data-k="${p.key}"><b>${p.name}</b><small>${p.sub}</small></button>`).join('')
     + `<button class="opt ${s.deck === 'custom' ? 'on' : ''}" data-act="setdeck" data-k="custom" ${custom ? '' : 'disabled style="opacity:.45"'}><b>我的牌組</b><small>${custom ? '20 張已儲存' : '先到「自組牌組」建立'}</small></button>`;
   const lead = LEADERS.map((l, k) => `<button class="opt ${s.leader === k ? 'on' : ''}" data-act="setleader" data-k="${k}"><b>${esc(l.name)}</b><small>${l.race}・生命 ${l.hp}・能力：暫無</small></button>`).join('');
+  const randOpt = (act, on, sub) => `<button class="opt ${on ? 'on' : ''}" data-act="${act}" data-k="rand"><b>完全隨機</b><small>${sub}</small></button>`;
+  const aiLead = randOpt('setaileader', s.aiLeader === 'rand', '每局隨機一位') + LEADERS.map((l, k) => `<button class="opt ${s.aiLeader === k ? 'on' : ''}" data-act="setaileader" data-k="${k}"><b>${esc(l.name)}</b><small>${l.race}・生命 ${l.hp}</small></button>`).join('');
+  const aiDeck = randOpt('setaideck', s.aiDeck === 'rand', '從紅／綠／藍／隨機牌組中抽一種') + PRESETS.map(p => `<button class="opt ${s.aiDeck === p.key ? 'on' : ''}" data-act="setaideck" data-k="${p.key}"><b>${p.name}</b><small>${p.sub}</small></button>`).join('')
+    + `<button class="opt ${s.aiDeck === 'custom' ? 'on' : ''}" data-act="setaideck" data-k="custom" ${custom ? '' : 'disabled style="opacity:.45"'}><b>我的牌組</b><small>${custom ? '電腦用你自組的牌組' : '先到「自組牌組」建立'}</small></button>`;
   const hands = ['剪刀', '石頭', '布'];
   return `<div class="veil"><div class="dlg" role="dialog" aria-modal="true">
     <h2>新對局：對戰電腦</h2><p class="d">選好主角和牌組後猜拳，贏的人第 1 回合先攻，之後每回合交換。</p>
-    <div class="sec">主角</div><div class="opts">${lead}</div>
+    <div class="sec">你的主角</div><div class="opts">${lead}</div>
     <div class="sec">你的牌組（20 張，費用 3 的角色固定 3 張）</div><div class="opts">${deckOpts}</div>
+    <div class="sec">電腦的主角</div><div class="opts">${aiLead}</div>
+    <div class="sec">電腦的牌組</div><div class="opts">${aiDeck}</div>
     <div class="sec">猜拳決定先攻</div>
     <div class="rps">${hands.map((h, k) => `<button data-act="rps" data-k="${k}">${h}</button>`).join('')}</div>
     <div class="rpsres">${s.rps || ''}</div>
-    <div class="row"><span class="sp">單色牌組 17 張同色，另外 3 張從其他顏色的費用 1 隨機補。電腦隨機使用其中一種牌組</span>${G && !G.over ? '<button class="btn" data-act="close">取消</button>' : ''}<button class="btn primary" data-act="start" ${s.first === undefined ? 'disabled' : ''}>開始對戰</button></div>
+    <div class="row"><span class="sp">單色牌組 17 張同色，另外 3 張從其他顏色的費用 1 隨機補</span>${G && !G.over ? '<button class="btn" data-act="close">取消</button>' : ''}<button class="btn primary" data-act="start" ${s.first === undefined ? 'disabled' : ''}>開始對戰</button></div>
   </div></div>`;
 }
 function startGame() {
   const s = modal;
   const myDeck = s.deck === 'custom' ? loadCustom() : buildDeck(PRESETS.find(p => p.key === s.deck).colors);
-  const aiPreset = PRESETS[Math.floor(Math.random() * PRESETS.length)];
-  const aiLeader = Math.floor(Math.random() * LEADERS.length);
+  lastSetup = { leader: s.leader, deck: s.deck, aiLeader: s.aiLeader, aiDeck: s.aiDeck };
+  const aiLeader = s.aiLeader === 'rand' ? Math.floor(Math.random() * LEADERS.length) : s.aiLeader;
+  let aiDeckName, aiDeckIds;
+  if (s.aiDeck === 'custom' && loadCustom()) { aiDeckName = '我的牌組'; aiDeckIds = loadCustom(); }
+  else { const pr = s.aiDeck === 'rand' || s.aiDeck === 'custom' ? PRESETS[Math.floor(Math.random() * PRESETS.length)] : PRESETS.find(p => p.key === s.aiDeck); aiDeckName = pr.name; aiDeckIds = buildDeck(pr.colors); }
   modal = null; sel = null; pend = null; lastLogLen = -1; gameId++;
   const myId = gameId;
-  newGame({ names: ['你', '電腦'], leaders: [LEADERS[s.leader], LEADERS[aiLeader]], decks: [myDeck, buildDeck(aiPreset.colors)], ai: [false, true], first: s.first });
-  log(`電腦使用「${aiPreset.name}」牌組`, 'sys');
+  newGame({ names: ['你', '電腦'], leaders: [LEADERS[s.leader], LEADERS[aiLeader]], decks: [myDeck, aiDeckIds], ai: [false, true], first: s.first });
+  log(`電腦使用「${aiDeckName}」（${s.aiDeck === 'rand' ? '完全隨機' : '指定'}）`, 'sys');
   render();
   gameLoop().catch(e => { if (myId === gameId) { log('程式錯誤：' + e.message, 'sys'); render(); console.error(e); } });
 }
@@ -300,10 +309,12 @@ document.addEventListener('click', async ev => {
     setTimeout(() => (t.textContent = '複製紀錄'), 1600); return;
   }
   if (a === 'rules') { modal = { type: 'rules' }; render(); return; }
-  if (a === 'newgame') { modal = { type: 'setup', leader: 0, deck: loadCustom() ? 'custom' : 'R' }; render(); return; }
+  if (a === 'newgame') { modal = newSetup(); render(); return; }
   if (a === 'builder') { modal = { type: 'builder', picked: (loadCustom() || []).slice() }; render(); return; }
   if (a === 'setdeck') { modal.deck = t.dataset.k; render(); return; }
   if (a === 'setleader') { modal.leader = +t.dataset.k; render(); return; }
+  if (a === 'setaileader') { modal.aiLeader = t.dataset.k === 'rand' ? 'rand' : +t.dataset.k; render(); return; }
+  if (a === 'setaideck') { modal.aiDeck = t.dataset.k; render(); return; }
   if (a === 'rps') {
     const hands = ['剪刀', '石頭', '布'], me = +t.dataset.k, ai = Math.floor(Math.random() * 3);
     const res = (me - ai + 3) % 3; // 1 = 我贏
@@ -315,7 +326,7 @@ document.addEventListener('click', async ev => {
   if (a === 'btoggle') { const id = t.dataset.id, p = modal.picked; const k = p.indexOf(id); if (k >= 0) p.splice(k, 1); else if (p.length < 20 && !(DEFS[id].cost === 3 && p.filter(x => DEFS[x].cost === 3).length >= MAX_COST3)) p.push(id); render(); return; }
   if (a === 'bclear') { modal.picked = []; render(); return; }
   if (a === 'bfill') { const rest = shuffle(Object.keys(DEFS).filter(id => !modal.picked.includes(id))); while (modal.picked.length < 20 && rest.length) { const id = rest.pop(); if (DEFS[id].cost === 3 && modal.picked.filter(x => DEFS[x].cost === 3).length >= MAX_COST3) continue; modal.picked.push(id); } render(); return; }
-  if (a === 'bsave') { saveCustom(modal.picked); modal = { type: 'setup', leader: 0, deck: 'custom' }; render(); return; }
+  if (a === 'bsave') { saveCustom(modal.picked); modal = { ...newSetup(), deck: 'custom' }; render(); return; }
   if (a === 'viewdiscard') { const p = P(+t.dataset.p); modal = { type: 'view', title: `${p.name}的棄牌堆（${p.discard.length} 張）`, cards: p.discard.slice() }; render(); return; }
   if (a === 'pick') {
     const k = +t.dataset.k, p = modal.picked, i = p.indexOf(k);
@@ -352,7 +363,9 @@ document.addEventListener('keydown', ev => {
   if (ev.key === 'Escape' && modal && ['view', 'rules'].includes(modal.type)) { modal = null; render(); }
 });
 
-modal = { type: 'setup', leader: 0, deck: loadCustom() ? 'custom' : 'R' };
+let lastSetup = null;
+function newSetup() { const l = lastSetup || { leader: 0, deck: loadCustom() ? 'custom' : 'R', aiLeader: 'rand', aiDeck: 'rand' }; if (l.deck === 'custom' && !loadCustom()) l.deck = 'R'; return { type: 'setup', ...l }; }
+modal = newSetup();
 renderEmptyBoard();
 function renderEmptyBoard() {
   $('turnline').textContent = '選好主角與牌組後開始對戰';
