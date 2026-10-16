@@ -111,7 +111,7 @@ function renderAxis() {
 function promptHTML() {
   if (G.over) {
     const t = G.over.draw ? '平手' : G.over.winner === 0 ? '你獲勝了' : '對手獲勝';
-    return `<div class="tt">${t}</div><div>${G.over.draw ? '雙方生命牌同時歸 0。' : '對方的生命牌歸 0。'}</div><div class="acts"><button class="btn primary" data-act="newgame">再來一局</button></div>`;
+    return `<div class="tt">${t}</div><div>${G.over.draw ? '雙方生命牌同時歸 0。' : G.over.winner === 0 ? '對手的生命牌歸 0。' : '你的生命牌歸 0。'}</div><div class="acts"><button class="btn primary" data-act="newgame">再來一局</button></div>`;
   }
   if (!pend) {
     if (G.step && G.step.who === 1) return `<div class="tt">對手${G.step.type === 'response' ? '考慮是否干擾' : '行動中'}…</div>`;
