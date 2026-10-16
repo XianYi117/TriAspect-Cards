@@ -81,8 +81,8 @@ function newGame(cfg) {
   return G;
 }
 function log(text, who = 'sys') { const e = { t: G ? G.turn : 0, ms: G && G.startedAt ? Date.now() - G.startedAt : 0, text, who }; G.log.push(e); IO.onLog(e); }
-// 毫秒轉成「分:秒」
-function clock(ms) { const sec = Math.floor(ms / 1000); return `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`; }
+// 毫秒轉成「時:分:秒」，例如 00:45:10
+function clock(ms) { const sec = Math.floor(ms / 1000), z = n => String(n).padStart(2, '0'); return `${z(Math.floor(sec / 3600))}:${z(Math.floor(sec / 60) % 60)}:${z(sec % 60)}`; }
 function durText(ms) { const sec = Math.round(ms / 1000); return sec >= 60 ? `${Math.floor(sec / 60)} 分 ${sec % 60} 秒` : `${sec} 秒`; }
 const opp = i => 1 - i;
 const P = i => G.pl[i];

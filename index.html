@@ -147,7 +147,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--brass);out
 .loghead .tools{display:flex;gap:6px;align-items:center}
 .log{max-height:min(46vh,460px);overflow-y:auto;padding:6px 10px;font-size:12px;display:flex;flex-direction:column;gap:3px}
 .log div{display:flex;gap:6px}
-.log .t{font-family:var(--f-num);color:var(--mute);opacity:.7;flex:none;width:34px;line-height:1.15;font-size:11px;padding-top:2px}
+.log .t{font-family:var(--f-num);color:var(--mute);opacity:.7;flex:none;width:46px;line-height:1.15;font-size:11px;padding-top:2px}
 .log .w0{color:#f0d9a6} .log .w1{color:#9fc0e8} .log .wsys{color:var(--mute)}
 .log .wturn{color:var(--brass);font-weight:700;margin-top:4px}
 label.tog{font-size:11.5px;color:var(--mute);display:flex;gap:4px;align-items:center;cursor:pointer}
@@ -326,8 +326,8 @@ function newGame(cfg) {
   return G;
 }
 function log(text, who = 'sys') { const e = { t: G ? G.turn : 0, ms: G && G.startedAt ? Date.now() - G.startedAt : 0, text, who }; G.log.push(e); IO.onLog(e); }
-// 毫秒轉成「分:秒」
-function clock(ms) { const sec = Math.floor(ms / 1000); return `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`; }
+// 毫秒轉成「時:分:秒」，例如 00:45:10
+function clock(ms) { const sec = Math.floor(ms / 1000), z = n => String(n).padStart(2, '0'); return `${z(Math.floor(sec / 3600))}:${z(Math.floor(sec / 60) % 60)}:${z(sec % 60)}`; }
 function durText(ms) { const sec = Math.round(ms / 1000); return sec >= 60 ? `${Math.floor(sec / 60)} 分 ${sec % 60} 秒` : `${sec} 秒`; }
 const opp = i => 1 - i;
 const P = i => G.pl[i];
