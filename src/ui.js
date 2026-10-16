@@ -151,7 +151,7 @@ function promptHTML() {
     const E = pend.ctx.target;
     return `<div class="tt">對手發動了效果</div>
       <div class="target-fx"><b class="tag ${E.fx.type}">${TN[E.fx.type]}</b> 【${esc(E.card.name)}】${esc(E.fx.body)}</div>
-      <div style="margin-top:4px">你可以發動 1 次干擾效果回應，干擾後對手不能再回應。</div>
+      <div style="margin-top:4px">你可以發動 1 次干擾效果回應（干擾後對手不能再回應），也可以使用立即效果。</div>
       <div class="acts"><button class="btn primary" data-act="end">不干擾</button></div>`;
   }
   if (pend.kind === 'next') {
@@ -331,10 +331,10 @@ function rulesHTML() {
   <h3>效果的三種類型</h3>
   <table class="r-fx"><thead><tr><th>種類</th><th>什麼時候用</th><th>每回合</th></tr></thead><tbody>
     <tr><td>${tag('magic')}</td><td>自己的行動時</td><td>1 次</td></tr>
-    <tr><td>${tag('instant')}</td><td>自己的行動時，和魔法分開計算次數</td><td>1 次</td></tr>
+    <tr><td>${tag('instant')}</td><td>任何時間：自己的行動時，或對手發動效果時；和魔法分開計算次數</td><td>1 次</td></tr>
     <tr><td>${tag('inter')}</td><td>對手發動效果時，拿來回應</td><td>對手每個效果 1 次</td></tr>
   </tbody></table>
-  <p class="r-note">發動方式：先點手牌「轉為能量」放到消耗區，再按效果的「發動」。</p>
+  <p class="r-note">發動方式：能量不夠時，先點手牌「轉為能量」放到消耗區，再按效果的「發動」。從手牌發動的卡，發動後進入棄牌堆。</p>
 
   <details class="r-more"><summary>補充規則（需要時再查）</summary>
   <div class="rules">

@@ -232,7 +232,9 @@ function whyNot(i, where, card, idx, win) {
     if (fx.type === 'instant' && p.flags.instant) return '本回合已發動過立即效果';
     if (fx.type === 'instant' && p.flags.noInstant) return '本回合被禁止使用立即效果';
   } else if (win.type === 'response') {
-    if (fx.type !== 'inter') return '回應時只能發動干擾效果';
+    if (fx.type === 'magic') return '魔法效果只能在自己的行動時發動';
+    if (fx.type === 'instant' && p.flags.instant) return '本回合已發動過立即效果';
+    if (fx.type === 'instant' && p.flags.noInstant) return '本回合被禁止使用立即效果';
     if (fx.ops.some(o => o.op === 'negate' && o.magicOnly) && win.target.fx.type !== 'magic') return '只能無效魔法效果';
   } else return '現在不能發動';
   if (fx.ops.some(o => o.op === 'copy') && !copyOptions().length) return '場上沒有可複製的效果';
@@ -278,13 +280,18 @@ async function runEffect(E) {
   if (E.fx.interferable) {
     const prev = G.step;
     G.step = { type: 'response', who: o, target: E };
-    const cands = responseCandidates(o, E).filter(c => P(o).ai || canEverPay(o, effCost(c.fx, c.where), c.where === 'hand' ? c.card : null));
-    if (cands.length) {
+    // 回應時：可以干擾 1 次；立即效果任何時間皆可發動（每回合 1 次），發動後回應時機仍保留
+    while (!G.over) {
+      G.step = { type: 'response', who: o, target: E };
+      const cands = responseCandidates(o, E).filter(c => P(o).ai || canEverPay(o, effCost(c.fx, c.where), c.where === 'hand' ? c.card : null));
+      const inst = P(o).ai ? [] : actionCandidates(o).filter(c => c.card.fxP[c.idx].type === 'instant');
+      if (!cands.length && !inst.length) break;
       const d = P(o).ai ? await aiResponse(o, E) : await IO.ask('response', { target: E });
-      if (d && !G.over) {
-        const I = await activate(o, d.where, d.card, d.idx);
-        await resolve(I, E);
-      } else if (!P(o).ai) log(`${P(o).name} 不干擾`, o);
+      if (!d || G.over) { if (!d && !P(o).ai) log(`${P(o).name} 不干擾`, o); break; }
+      const I = await activate(o, d.where, d.card, d.idx);
+      if (I.fx.type === 'instant') { await runEffect(I); continue; }
+      await resolve(I, E);
+      break;
     }
     G.step = prev;
   }
@@ -575,4 +582,4 @@ function buildDeck(colors) {
   for (const [cost, n] of [[1, 9], [2, 8], [3, MAX_COST3]]) out.push(...shuffle(all.filter(c => colors.includes(c.color) && c.cost === cost)).slice(0, n));
   return out.map(c => c.id);
 }
-if (typeof module !== 'undefined') module.exports = { IO, RULES, loadData, effCost, newGame, gameLoop, buildDeck, get G() { return G; }, get LEADERS() { return LEADERS; }, DEFS: () => DEFS, parseFx };
+if (typeof module !== 'undefined') module.exports = { IO, RULES, loadData, effCost, whyNot, toEnergy, newGame, gameLoop, buildDeck, get G() { return G; }, get LEADERS() { return LEADERS; }, DEFS: () => DEFS, parseFx };
