@@ -1,240 +1,1126 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>元素卡牌對戰 v1.0.2｜潮汐・森境・燼火</title>
+<title>TRIASPECT Cards</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
 <style>
-:root{--bg:#0b0f14;--panel:#141a22;--border:#2a3441;--text:#e8eef5;--muted:#8b9aab;--blue:#4dabf7;--green:#51cf66;--red:#ff6b6b;--gold:#fcc419;--gray:#adb5bd}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.hidden{display:none!important}
-button{font-family:inherit;cursor:pointer;border:1px solid var(--border);background:#1c2530;color:var(--text);border-radius:8px;padding:8px 14px;font-size:13px;transition:.15s}
-button:hover:not(:disabled){background:#273445}
-button:disabled{opacity:.35;cursor:not-allowed}
-button.primary{background:#2b8a3e;border-color:#37b24d}
-button.primary:hover:not(:disabled){background:#37b24d}
-button.danger{background:#c92a2a;border-color:#ff6b6b}
-button.warn{background:#e67700;border-color:#fcc419}
-button.blue{border-color:var(--blue);color:var(--blue)}
-button.green{border-color:var(--green);color:var(--green)}
-button.red{border-color:var(--red);color:var(--red)}
-#start{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;text-align:center}
-#start h1{font-size:26px;background:linear-gradient(90deg,var(--blue),var(--green),var(--red));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-#start p{color:var(--muted);max-width:520px;line-height:1.7;font-size:14px}
-.factions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-.wrap{max-width:1280px;margin:0 auto;padding:8px;display:flex;flex-direction:column;gap:8px;min-height:100vh}
-.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.stats span{background:#1c2530;padding:3px 10px;border-radius:6px;font-size:12px}
-.stats strong{color:var(--gold)}
-.life{color:var(--red)!important}
-.zone-label{font-size:11px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between}
-.cards{display:flex;gap:6px;flex-wrap:wrap;min-height:88px;align-items:flex-start}
-.field{border:1px dashed var(--border);border-radius:8px;padding:4px;min-height:100px;background:#0d1218}
-.card{width:76px;height:106px;border-radius:7px;border:2px solid var(--border);position:relative;cursor:pointer;overflow:hidden;flex-shrink:0;transition:transform .12s,box-shadow .12s;background:#1a222d;user-select:none}
-.card:hover{transform:translateY(-3px)}
-.card.sel{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold)}
-.card.back{background:linear-gradient(145deg,#15202b,#0d1520);display:flex;align-items:center;justify-content:center;font-size:22px;color:#3d5a80;border-color:#1e3a5f}
-.card img{width:100%;height:100%;object-fit:cover;pointer-events:none}
-.card .face{padding:4px;height:100%;display:flex;flex-direction:column;font-size:10px;line-height:1.2}
-.card .face .nm{font-weight:700;font-size:11px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.card .face .fx{color:var(--muted);font-size:9px;flex:1;overflow:hidden}
-.card .cost{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#000;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
-.card .atk{position:absolute;bottom:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
-.card .race{position:absolute;bottom:2px;right:2px;width:18px;height:18px;border-radius:50%;background:#222;color:#ccc;font-size:10px;display:flex;align-items:center;justify-content:center}
-.card.col-R{border-color:#c92a2a}.card.col-G{border-color:#2b8a3e}.card.col-B{border-color:#1971c2}
-.card.energy{opacity:.85;border-style:dashed}
-.log{height:110px;overflow-y:auto;font-size:12px;font-family:ui-monospace,monospace;background:#0a0e13;border-radius:8px;padding:8px;border:1px solid var(--border)}
-.log div{margin-bottom:2px}.log .sys{color:var(--muted)}.log .p1{color:var(--green)}.log .p2{color:var(--red)}.log .fx{color:var(--blue)}.log .bat{color:var(--gold)}
-.phase-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:6px 0}
-.phase-bar .ph{padding:4px 10px;border-radius:20px;font-size:12px;background:#1c2530;color:var(--muted)}
-.phase-bar .ph.active{background:#1c3a2a;color:var(--green);font-weight:700}
-.phase-bar .ph.done{color:#495057}
-.ctrl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding-top:6px}
-.sel-info{font-size:12px;color:var(--gold);min-height:18px}
-.energy-bar span{display:inline-block;padding:2px 8px;border-radius:4px;margin-right:4px;font-size:12px}
-.energy-bar .r{border-left:3px solid var(--red)}.energy-bar .g{border-left:3px solid var(--green)}.energy-bar .b{border-left:3px solid var(--blue)}.energy-bar .x{border-left:3px solid var(--gray)}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:none;align-items:center;justify-content:center}
-.modal.show{display:flex}
-.modal-box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:440px;width:92%}
-.modal-box h3{margin-bottom:12px}
-.modal-box .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+/* 版面概念：兩軍隔著中央「戰軸」對陣；右側情報欄放雙方數字與對戰紀錄 */
+:root{
+  --ink:#0d0f11; --slab:#15191c; --slab2:#1c2125; --rule:#2a3136; --rule2:#3a434a;
+  --brass:#c9a35b; --brass-dim:#8a7243; --fg:#e7e1d3; --mute:#8d938f; --paper:#f3e8cf; --paper-ink:#2b2219;
+  --R:#cf4a3a; --G:#3f9a55; --B:#3d7ccd; --X:#8a8780; --good:#79c27c; --bad:#e16a52;
+  --f-display:"LXGW WenKai TC","Noto Serif TC",serif; --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif; --f-num:"Barlow Condensed","Arial Narrow",sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--ink);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px 16px;
+  background-image:radial-gradient(ellipse at 50% 46%,#1a1f23 0,transparent 60%),repeating-linear-gradient(45deg,transparent 0 22px,#ffffff05 22px 23px),repeating-linear-gradient(-45deg,transparent 0 22px,#ffffff05 22px 23px)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.top{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid var(--rule);margin-bottom:12px}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand-name{font-family:var(--f-display);font-size:24px;font-weight:700;letter-spacing:.08em;color:var(--brass)}
+.ver{font-size:12px;color:var(--mute);letter-spacing:.06em}
+.turnline{flex:1;min-width:0;font-size:13px;color:var(--mute)}
+.turnline b{color:var(--fg);font-family:var(--f-num);font-size:18px;margin-inline:2px}
+.top-act{display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:var(--slab2);border:1px solid var(--rule2);border-radius:6px;padding:6px 14px;font-size:13px}
+.btn:hover{border-color:var(--brass-dim)}
+.btn.primary{background:var(--brass);color:#1b1408;border-color:var(--brass);font-weight:700}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.sm{padding:3px 10px;font-size:12px}
+
+.app{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+.board{display:flex;flex-direction:column;gap:10px;min-width:0}
+.zlabel{font-size:11px;letter-spacing:.14em;color:var(--mute);display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}
+.zlabel b{color:var(--fg);font-weight:500;letter-spacing:0}
+.zone{border:1px dashed var(--rule2);border-radius:8px;padding:8px 10px;min-width:0;background:#ffffff03}
+.side{display:grid;grid-template-columns:172px minmax(0,1fr);gap:10px}
+.fieldslot{display:flex;justify-content:center;align-items:center;min-height:204px}
+.empty{color:var(--rule2);font-size:12px;letter-spacing:.1em}
+.consume-list{display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;min-height:56px}
+.handrow{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:10px;align-items:start}
+.hand{display:flex;flex-wrap:wrap;gap:8px;min-height:190px;align-content:flex-start}
+.opphand{display:flex;flex-wrap:wrap;gap:6px;min-height:76px}
+
+/* 戰軸 */
+.axis{display:grid;grid-template-columns:minmax(0,1.1fr) auto minmax(0,1.3fr);gap:16px;align-items:center;background:linear-gradient(90deg,var(--slab),var(--slab2) 50%,var(--slab));border-block:1px solid var(--brass-dim);padding:12px 14px;border-radius:4px}
+.steps{display:flex;flex-wrap:wrap;gap:4px}
+.step{font-size:11.5px;padding:2px 8px;border-radius:99px;border:1px solid var(--rule2);color:var(--mute)}
+.step.on{border-color:var(--brass);color:#1b1408;background:var(--brass);font-weight:700}
+.step.done{color:var(--fg);border-color:var(--rule2)}
+.firstline{font-size:12px;color:var(--mute);margin-top:6px}
+.firstline b{color:var(--brass)}
+.duel{display:flex;align-items:center;gap:14px;font-family:var(--f-num)}
+.pw{text-align:center;min-width:64px}
+.pw .n{font-size:44px;line-height:1;font-weight:700}
+.pw .who{font-family:var(--f-body);font-size:11px;color:var(--mute);letter-spacing:.1em}
+.pw .mod{font-family:var(--f-body);font-size:11px;color:var(--brass)}
+.vs{font-size:13px;color:var(--brass-dim);letter-spacing:.2em}
+.pw.win .n{color:var(--good)} .pw.lose .n{color:var(--bad)}
+.prompt{font-size:13.5px;min-width:0}
+.prompt .tt{font-family:var(--f-display);font-size:17px;color:var(--brass);margin-bottom:2px}
+.prompt .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.target-fx{background:var(--slab);border:1px solid var(--rule2);border-radius:6px;padding:6px 8px;margin-top:4px;font-size:12.5px}
+
+/* 卡牌 */
+.card{--w:128px;--cc:var(--X);width:var(--w);aspect-ratio:5/7;border-radius:calc(var(--w)/16);background:var(--paper);border:calc(var(--w)/40) solid var(--cc);box-shadow:0 0 0 1px #00000088,0 6px 14px #00000066;display:flex;flex-direction:column;color:var(--paper-ink);position:relative;font-size:calc(var(--w)/12.5);overflow:hidden;flex:none;transition:transform .15s,box-shadow .15s}
+.card.cR{--cc:var(--R)} .card.cG{--cc:var(--G)} .card.cB{--cc:var(--B)}
+.card.l{--w:144px} .card.xl{--w:200px} .card.s{--w:96px} .card.xs{--w:54px}
+.card.click{cursor:pointer}
+.card.click:hover{transform:translateY(-4px)}
+.card.sel{box-shadow:0 0 0 3px var(--brass),0 8px 18px #000a;transform:translateY(-6px)}
+.card.dim{opacity:.45}
+.c-top{display:flex;align-items:center;gap:4px;background:#1a1d22;color:var(--paper);padding:3px 4px}
+.c-cost{width:1.9em;height:1.9em;border-radius:50%;background:var(--cc);display:grid;place-items:center;font-family:var(--f-num);font-weight:700;font-size:1.15em;flex:none}
+.c-name{flex:1;text-align:center;font-family:var(--f-display);font-weight:700;font-size:1.15em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-art{flex:1;min-height:0;position:relative;background:radial-gradient(circle at 50% 55%,color-mix(in srgb,var(--cc) 22%,transparent),transparent 70%);display:grid;place-items:center}
+.c-art span{font-family:var(--f-display);font-size:3.2em;color:color-mix(in srgb,var(--cc) 30%,transparent);font-weight:700}
+.c-wild{position:absolute;top:4px;right:4px;font-size:.85em;background:var(--paper-ink);color:var(--paper);padding:0 .4em;border-radius:3px}
+.c-fx{padding:3px 4px;display:flex;flex-direction:column;gap:2px;border-top:1px solid #0002}
+.fxl{display:flex;gap:3px;line-height:1.25;font-size:.92em}
+.tag{flex:none;font-size:.85em;padding:0 .35em;border-radius:3px;color:#fff;background:#222;height:1.45em;display:inline-grid;place-items:center}
+.tag.magic{background:#6d3fb0} .tag.inter{background:#a24a23} .tag.instant{background:#1d7f7a}
+.c-bot{display:flex;align-items:center;justify-content:space-between;background:#1a1d22;color:var(--paper);padding:2px 4px}
+.c-atk{width:1.9em;height:1.9em;border-radius:50%;background:var(--cc);display:grid;place-items:center;font-family:var(--f-num);font-weight:700;font-size:1.2em}
+.c-atk.up{box-shadow:0 0 0 2px var(--good)} .c-atk.down{box-shadow:0 0 0 2px var(--bad)}
+.c-id{font-family:var(--f-num);font-size:.95em;letter-spacing:.1em;color:var(--brass)}
+.c-race{font-family:var(--f-display);font-weight:700;font-size:1.1em}
+.card.back{background:#111 center/cover no-repeat;border-color:var(--brass-dim)}
+.card.face-down-mine{outline:2px dashed var(--brass);outline-offset:3px}
+.flag{position:absolute;left:50%;top:-1px;transform:translateX(-50%);background:var(--brass);color:#1b1408;font-size:11px;padding:0 8px;border-radius:0 0 6px 6px;white-space:nowrap;z-index:2}
+.modbadge{position:absolute;right:-6px;top:38%;background:var(--slab);border:1px solid var(--brass);color:var(--brass);font-family:var(--f-num);font-weight:700;font-size:16px;padding:0 6px;border-radius:4px}
+
+/* 消耗區：橫置的小卡 */
+.tap{width:78px;height:54px;border-radius:5px;background:var(--paper);color:var(--paper-ink);border-left:8px solid var(--cc);display:flex;flex-direction:column;justify-content:center;padding:2px 6px;font-size:11px;line-height:1.25;box-shadow:0 2px 6px #0008;position:relative}
+.tap.cR{--cc:var(--R)} .tap.cG{--cc:var(--G)} .tap.cB{--cc:var(--B)} .tap.cW{--cc:var(--brass)}
+.tap b{font-family:var(--f-display);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tap.spent{opacity:.42}
+.tap.spent::after{content:"已支付";position:absolute;right:4px;bottom:2px;font-size:9.5px}
+
+/* 操作面板 */
+.inspector{background:var(--slab);border:1px solid var(--rule2);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.inspector h3{margin:0;font-family:var(--f-display);font-size:16px;color:var(--brass);font-weight:700}
+.insp-top{display:flex;gap:10px;align-items:flex-start}
+.insp-meta{font-size:12px;color:var(--mute);display:grid;gap:2px}
+.insp-meta b{color:var(--fg);font-weight:500}
+.act{display:flex;flex-direction:column;gap:3px;border:1px solid var(--rule2);border-radius:6px;padding:7px 8px;background:var(--slab2)}
+.act .line{font-size:12.5px;display:flex;gap:6px;align-items:flex-start}
+.act .go{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.act .state{font-size:11.5px;color:var(--mute)}
+.act .state.ok{color:var(--good)}
+.act .state.no{color:var(--bad)}
+.act button{border-radius:5px;padding:4px 12px;font-size:12.5px;border:1px solid var(--brass);background:var(--brass);color:#1b1408;font-weight:700}
+.act button:disabled{background:transparent;color:var(--mute);border-color:var(--rule2);font-weight:400;cursor:not-allowed}
+.hint{font-size:12px;color:var(--mute)}
+.pip{display:inline-flex;align-items:center;gap:1px;font-family:var(--f-num);font-weight:700}
+.dot{width:.75em;height:.75em;border-radius:50%;display:inline-block;background:var(--X)}
+.dot.R{background:var(--R)} .dot.G{background:var(--G)} .dot.B{background:var(--B)} .dot.W{background:var(--brass)}
+
+/* 情報欄 */
+.intel{display:flex;flex-direction:column;gap:10px;position:sticky;top:env(safe-area-inset-top,0px)}
+.info{background:var(--slab);border:1px solid var(--rule);border-radius:8px;padding:10px 12px}
+.info.me{border-color:var(--brass-dim)}
+.info h4{margin:0 0 6px;display:flex;justify-content:space-between;align-items:baseline;font-family:var(--f-display);font-size:16px}
+.info h4 small{font-family:var(--f-body);font-size:11.5px;color:var(--mute);font-weight:400}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;text-align:center}
+.stat{background:var(--slab2);border-radius:5px;padding:4px 2px}
+.stat .n{font-family:var(--f-num);font-size:22px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat .k{font-size:10.5px;color:var(--mute);letter-spacing:.06em}
+.stat.life .n{color:var(--bad)}
+.stat button{background:none;border:0;padding:0;width:100%}
+.lifebar{display:flex;gap:3px;margin:6px 0 2px}
+.lifebar i{flex:1;height:6px;border-radius:2px;background:var(--rule2)}
+.lifebar i.on{background:var(--bad)}
+.statusline{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;font-size:11px}
+.chip{border:1px solid var(--rule2);border-radius:99px;padding:0 7px;color:var(--mute)}
+.chip.used{color:var(--fg);border-color:var(--brass-dim)}
+.chip.warn{color:var(--bad);border-color:var(--bad)}
+.chip.good{color:var(--good);border-color:var(--good)}
+.pool{display:flex;gap:8px;font-size:12px;margin-top:6px;align-items:center}
+.logbox{background:var(--slab);border:1px solid var(--rule);border-radius:8px;display:flex;flex-direction:column;min-height:0}
+.loghead{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid var(--rule)}
+.loghead b{font-family:var(--f-display);font-size:15px}
+.loghead .tools{display:flex;gap:6px;align-items:center}
+.log{max-height:min(46vh,460px);overflow-y:auto;padding:6px 10px;font-size:12px;display:flex;flex-direction:column;gap:3px}
+.log div{display:flex;gap:6px}
+.log .t{font-family:var(--f-num);color:var(--rule2);flex:none;width:22px}
+.log .w0{color:#f0d9a6} .log .w1{color:#9fc0e8} .log .wsys{color:var(--mute)}
+.log .wturn{color:var(--brass);font-weight:700;margin-top:4px}
+label.tog{font-size:11.5px;color:var(--mute);display:flex;gap:4px;align-items:center;cursor:pointer}
+
+/* 對話框 */
+.veil{position:fixed;inset:0;background:#000b;display:grid;place-items:center;z-index:50;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.dlg{background:var(--slab);border:1px solid var(--brass-dim);border-radius:10px;max-width:min(920px,100%);width:100%;max-height:100%;overflow:auto;padding:18px}
+.dlg h2{margin:0 0 4px;font-family:var(--f-display);color:var(--brass);font-size:22px;text-wrap:balance}
+.dlg p.d{margin:0 0 12px;color:var(--mute)}
+.pickgrid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.pickitem{display:flex;flex-direction:column;gap:4px;align-items:center;max-width:220px}
+.pickitem .lbl{font-size:12px;text-align:center}
+.pickitem.on .card,.pickitem.on .lblcard{box-shadow:0 0 0 3px var(--brass);transform:translateY(-4px)}
+.dlg .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;align-items:center}
+.dlg .row .sp{flex:1;color:var(--mute);font-size:12.5px}
+.opts{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px}
+.opt{border:1px solid var(--rule2);background:var(--slab2);border-radius:8px;padding:8px 12px;text-align:left;min-width:120px}
+.opt.on{border-color:var(--brass);box-shadow:inset 0 0 0 1px var(--brass)}
+.opt small{display:block;color:var(--mute);font-size:11.5px}
+.sec{font-size:12px;letter-spacing:.14em;color:var(--mute);margin:10px 0 4px}
+.rps{display:flex;gap:10px;margin:10px 0}
+.rps button{font-size:18px;padding:12px 20px;border-radius:8px;background:var(--slab2);border:1px solid var(--rule2);font-family:var(--f-display)}
+.rps button:hover{border-color:var(--brass)}
+.rpsres{font-family:var(--f-display);font-size:18px;color:var(--brass);min-height:28px}
+.builder{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px;margin-bottom:12px}
+.brow{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--rule);border-radius:6px;padding:6px 8px;background:var(--slab2);text-align:left;font-size:12px;line-height:1.35}
+.brow.on{border-color:var(--brass);background:#2a2518}
+.brow .bcost{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-num);font-weight:700;color:#fff;flex:none}
+.brow .bname{font-family:var(--f-display);font-size:14px}
+.brow .bfx{color:var(--mute);font-size:11.5px}
+.rules{columns:2 300px;column-gap:28px;font-size:13px}
+.rules h3{font-family:var(--f-display);color:var(--brass);margin:10px 0 4px;font-size:15px;break-after:avoid}
+.rules ul{margin:0;padding-left:18px}
+.rules li{margin-bottom:3px}
+.rules .note{color:var(--brass)}
+
+@media (max-width:1100px){.app{grid-template-columns:1fr}.intel{position:static}.handrow{grid-template-columns:1fr}}
+@media (max-width:640px){
+  .side{grid-template-columns:1fr}.axis{grid-template-columns:1fr}.card{--w:104px}.card.l{--w:132px}.card.xs{--w:46px}.fieldslot{min-height:0}
+  .duel{justify-content:center}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
-</head>
-<body>
-<div id="start">
-  <h1>元素卡牌對戰 v1.0.2</h1>
-  <p>一組牌組 20 張・生命牌 6 張・每回合同時召喚 1 隻角色<br>
-  公開支付能量 → 發動效果（先攻可出招，後攻可干擾）→ 比較戰鬥力結算傷害<br>
-  卡牌可作：召喚用 / 效果用 / 能量用（依右上顏色）</p>
-  <div class="factions">
-    <button class="blue" onclick="boot('B')">潮汐藍</button>
-    <button class="green" onclick="boot('G')">森境綠</button>
-    <button class="red" onclick="boot('R')">燼火紅</button>
-    <button onclick="boot('MIX')">混合牌組</button>
+
+<header class="top">
+  <div class="brand"><span class="brand-name">TRIASPECT</span><span class="ver">CARDS · 規則 v1.0.2</span></div>
+  <div class="turnline" id="turnline"></div>
+  <div class="top-act">
+    <button class="btn" id="btnRules" data-act="rules">規則</button>
+    <button class="btn" data-act="builder">自組牌組</button>
+    <button class="btn" data-act="newgame">新對局</button>
   </div>
-  <p style="font-size:12px;color:var(--muted)">完整卡圖請使用本地 artifacts/game 版本。線上版使用 CSS 卡面，規則相同。</p>
-</div>
-<div class="wrap hidden" id="game">
-  <div class="panel">
-    <div class="zone-label"><span>敵方</span><span id="turnTag">—</span></div>
-    <div class="row stats">
-      <span>生命牌 <strong class="life" id="eLife">6</strong></span>
-      <span>牌庫 <strong id="eDeck">0</strong></span>
-      <span>棄牌 <strong id="eDisc">0</strong></span>
-      <span>手牌 <strong id="eHandN">0</strong></span>
-      <span class="energy-bar" id="eEn">R0 G0 B0 X0</span>
+</header>
+
+<main class="app">
+  <section class="board">
+    <div class="zone">
+      <div class="zlabel"><span>敵方手牌區</span><b id="oppHandN"></b></div>
+      <div class="opphand" id="oppHand"></div>
     </div>
-    <div class="zone-label">敵方召喚／戰場</div>
-    <div class="cards field" id="eField"></div>
-    <div class="zone-label">敵方手牌（牌背）</div>
-    <div class="cards" id="eHand"></div>
-  </div>
-  <div class="panel">
-    <div class="phase-bar" id="phases">
-      <span class="ph" data-p="draw">①抽牌</span>
-      <span class="ph" data-p="summon">②召喚</span>
-      <span class="ph" data-p="pay">③支付能量</span>
-      <span class="ph" data-p="effect">④發動效果</span>
-      <span class="ph" data-p="battle">⑤戰鬥結算</span>
-      <span class="ph" data-p="clean">⑥回合結束</span>
+    <div class="side">
+      <div class="zone"><div class="zlabel"><span>敵方戰場區</span></div><div class="fieldslot" id="oppField"></div></div>
+      <div class="zone"><div class="zlabel"><span>敵方消耗區</span><b id="oppPool"></b></div><div class="consume-list" id="oppConsume"></div></div>
     </div>
-    <div class="log" id="log"></div>
-  </div>
-  <div class="panel">
-    <div class="zone-label">
-      <span>我方</span>
-      <span class="energy-bar">
-        <span class="r">紅 <strong id="pR">0</strong></span>
-        <span class="g">綠 <strong id="pG">0</strong></span>
-        <span class="b">藍 <strong id="pB">0</strong></span>
-        <span class="x">灰 <strong id="pX">0</strong></span>
-      </span>
+    <div class="axis" id="axis"></div>
+    <div class="side">
+      <div class="zone"><div class="zlabel"><span>我方戰場區</span></div><div class="fieldslot" id="meField"></div></div>
+      <div class="zone"><div class="zlabel"><span>我方消耗區</span><b id="mePool"></b></div><div class="consume-list" id="meConsume"></div></div>
     </div>
-    <div class="row stats">
-      <span>生命牌 <strong class="life" id="pLife">6</strong></span>
-      <span>牌庫 <strong id="pDeck">0</strong></span>
-      <span>棄牌 <strong id="pDisc">0</strong></span>
-      <span>手牌 <strong id="pHandN">0</strong></span>
+    <div class="handrow">
+      <div class="zone"><div class="zlabel"><span>我方手牌區</span><b id="meHandN"></b></div><div class="hand" id="meHand"></div></div>
+      <aside class="inspector" id="inspector" aria-live="polite"></aside>
     </div>
-    <div class="zone-label">能量牌區 <small>（點手牌→轉能量）</small></div>
-    <div class="cards" id="pEnergy"></div>
-    <div class="zone-label">我方召喚／戰場</div>
-    <div class="cards field" id="pField"></div>
-    <div class="zone-label">我方手牌</div>
-    <div class="cards" id="pHand"></div>
-    <div class="sel-info" id="selInfo">請依當前階段操作</div>
-    <div class="ctrl">
-      <button id="btnEnergy" disabled onclick="actToEnergy()">轉為能量</button>
-      <button id="btnSummon" class="primary" disabled onclick="actSummon()">選擇召喚</button>
-      <button id="btnPay" class="warn" disabled onclick="actPay()">確認支付</button>
-      <button id="btnEffect" class="blue" disabled onclick="actEffect()">發動效果</button>
-      <button id="btnSkipFx" disabled onclick="actSkipEffect()">跳過效果</button>
-      <button id="btnBattle" class="danger" disabled onclick="actBattle()">進入戰鬥結算</button>
-      <button id="btnEnd" disabled onclick="actEndTurn()">結束回合</button>
-      <button onclick="location.reload()">重新開始</button>
+  </section>
+  <aside class="intel">
+    <div class="info" id="infoOpp"></div>
+    <div class="info me" id="infoMe"></div>
+    <div class="logbox">
+      <div class="loghead"><b>對戰情報</b>
+        <div class="tools">
+          <label class="tog"><input type="checkbox" id="dbgHand" data-act="dbg"> 顯示對手手牌</label>
+          <button class="btn sm" data-act="copylog">複製紀錄</button>
+        </div>
+      </div>
+      <div class="log" id="log"></div>
     </div>
-  </div>
-</div>
-<div class="modal" id="modal">
-  <div class="modal-box">
-    <h3 id="mTitle">選擇</h3>
-    <div id="mBody"></div>
-    <div class="btns">
-      <button onclick="closeModal()">取消</button>
-      <button class="primary" id="mOk">確認</button>
-    </div>
-  </div>
-</div>
+  </aside>
+</main>
+<div id="modal"></div>
+
 <script>
-const C = {
-B01:{id:'B01',n:'潮汐學徒',col:'B',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{R:1},txt:'我方單位攻擊力+1',fn:'buff',v:1},{t:'魔法',c:{G:1,X:1},txt:'從棄牌堆隨機抽1張',fn:'drawDisc',v:1}]},
-B02:{id:'B02',n:'霧影小妖',col:'B',cost:1,race:'妖',atk:2,fx:[{t:'干擾',c:{B:1},txt:'使對手消耗費用+1灰',fn:'costX',v:1}]},
-B03:{id:'B03',n:'泡沫幻魚',col:'B',cost:1,race:'幻',atk:3,fx:[{t:'立即',c:{B:1},txt:'將1張卡視為任意顏色',fn:'wild',v:1}]},
-B04:{id:'B04',n:'鏡湖幻靈',col:'B',cost:2,race:'幻',atk:2,fx:[{t:'魔法',c:{G:1,X:1},txt:'抽2張後放回1張',fn:'drawRet',v:2},{t:'干擾',c:{B:1,X:1},txt:'無效化對手效果',fn:'nullify',v:1}]},
-B05:{id:'B05',n:'冰晶妖王',col:'B',cost:3,race:'妖',atk:4,fx:[{t:'魔法',c:{G:1,X:1},txt:'複製場上效果(費2↓)',fn:'copy',v:2},{t:'魔法',c:{B:1,X:1},txt:'本次敵方傷害-2',fn:'redDmg',v:2}]},
-B06:{id:'B06',n:'潮汐守衛',col:'B',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{B:1},txt:'抽1張牌',fn:'draw',v:1}]},
-B07:{id:'B07',n:'泡沫海貝',col:'B',cost:1,race:'妖',atk:2,fx:[{t:'干擾',c:{X:1},txt:'對手選擇棄1張手牌',fn:'oppDisc',v:1}]},
-B08:{id:'B08',n:'泡沫精靈',col:'B',cost:1,race:'幻',atk:3,fx:[{t:'魔法',c:{B:1},txt:'對手1張手牌回庫並補1',fn:'bounce',v:1}]},
-B09:{id:'B09',n:'冰晶學徒',col:'B',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{X:1},txt:'敵方單位攻擊力-1',fn:'debuff',v:1}]},
-B10:{id:'B10',n:'深海斥候',col:'B',cost:1,race:'妖',atk:2,fx:[{t:'魔法',c:{B:1},txt:'從棄牌堆隨機抽1張',fn:'drawDisc',v:1}]},
-B11:{id:'B11',n:'鏡湖術士',col:'B',cost:2,race:'人',atk:3,fx:[{t:'魔法',c:{B:1,X:1},txt:'抽2張後放回1張',fn:'drawRet',v:2}]},
-B12:{id:'B12',n:'霧隱妖',col:'B',cost:2,race:'妖',atk:3,fx:[{t:'魔法',c:{R:1,X:1},txt:'對敵方玩家造成1傷害',fn:'dmgP',v:1}]},
-B13:{id:'B13',n:'幻影魚群',col:'B',cost:2,race:'幻',atk:3,fx:[{t:'魔法',c:{G:1},txt:'回復1點血量',fn:'heal',v:1},{t:'魔法',c:{R:1},txt:'敵方單位攻擊力-1',fn:'debuff',v:1}]},
-B14:{id:'B14',n:'寒冰使者',col:'B',cost:2,race:'人',atk:2,fx:[{t:'魔法',c:{R:1},txt:'我方單位攻擊力+1',fn:'buff',v:1}]},
-B15:{id:'B15',n:'水霧幻靈',col:'B',cost:2,race:'幻',atk:3,fx:[{t:'立即',c:{B:1,X:1},txt:'抽1張(不可被干擾)',fn:'draw',v:1}]},
-B16:{id:'B16',n:'冰晶女皇',col:'B',cost:3,race:'妖',atk:5,fx:[{t:'魔法',c:{B:1,X:1},txt:'本次敵方效果傷害-2',fn:'redDmg',v:2},{t:'干擾',c:{G:1,X:1},txt:'對手2張手牌回庫再抽1',fn:'mill',v:2}]},
-B17:{id:'B17',n:'深海幻龍',col:'B',cost:3,race:'幻',atk:4,fx:[{t:'魔法',c:{B:1,X:1},txt:'複製場上效果(費2↓)',fn:'copy',v:2},{t:'立即',c:{R:1},txt:'抽1張牌',fn:'draw',v:1}]},
-B18:{id:'B18',n:'潮汐領主',col:'B',cost:3,race:'人',atk:4,fx:[{t:'魔法',c:{B:1,X:1},txt:'抽2張牌',fn:'draw',v:2},{t:'立即',c:{X:2},txt:'禁止使用魔法效果',fn:'sealM',v:1}]},
-G01:{id:'G01',n:'森境護衛',col:'G',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{B:1},txt:'抽1張牌',fn:'draw',v:1}]},
-G02:{id:'G02',n:'苔角小妖',col:'G',cost:1,race:'妖',atk:2,fx:[{t:'干擾',c:{X:1},txt:'對手選擇棄1張手牌',fn:'oppDisc',v:1}]},
-G03:{id:'G03',n:'巡林獵手',col:'G',cost:2,race:'人',atk:4,fx:[{t:'魔法',c:{G:1},txt:'回復1點血量',fn:'heal',v:1},{t:'干擾',c:{B:1},txt:'無效魔法效果',fn:'nullM',v:1}]},
-G04:{id:'G04',n:'古木守望者',col:'G',cost:3,race:'人',atk:5,fx:[{t:'干擾',c:{B:1,X:1},txt:'對手需多花1藍能量',fn:'costB',v:1},{t:'魔法',c:{G:1,X:1},txt:'對手單位傷害-2',fn:'redAtk',v:2}]},
-G05:{id:'G05',n:'葉刃護衛',col:'G',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{B:1},txt:'敵方單位攻擊力-1',fn:'debuff',v:1}]},
-G06:{id:'G06',n:'藤蔓小妖',col:'G',cost:1,race:'妖',atk:2,fx:[{t:'干擾',c:{X:1},txt:'對手選擇棄1張手牌',fn:'oppDisc',v:1}]},
-G07:{id:'G07',n:'森靈幻影',col:'G',cost:1,race:'幻',atk:3,fx:[{t:'干擾',c:{G:1},txt:'無效魔法效果',fn:'nullM',v:1}]},
-G08:{id:'G08',n:'青木術士',col:'G',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{X:1},txt:'抽1張牌',fn:'draw',v:1}]},
-G09:{id:'G09',n:'翠葉斥候',col:'G',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{G:1},txt:'敵方單位攻擊力-1',fn:'debuff',v:1}]},
-G10:{id:'G10',n:'荊棘妖',col:'G',cost:1,race:'妖',atk:3,fx:[{t:'魔法',c:{G:1},txt:'回復1點血量',fn:'heal',v:1}]},
-G11:{id:'G11',n:'苔石巨人',col:'G',cost:2,race:'妖',atk:3,fx:[{t:'魔法',c:{G:1,X:1},txt:'敵方單位攻擊力-2',fn:'debuff',v:2}]},
-G12:{id:'G12',n:'綠影刺客',col:'G',cost:2,race:'幻',atk:3,fx:[{t:'干擾',c:{B:1,X:1},txt:'無效對手效果',fn:'nullify',v:1},{t:'魔法',c:{G:1,X:1},txt:'從棄牌堆隨機抽1張',fn:'drawDisc',v:1}]},
-G13:{id:'G13',n:'古樹守護',col:'G',cost:2,race:'人',atk:3,fx:[{t:'魔法',c:{B:1},txt:'抽1張牌',fn:'draw',v:1},{t:'魔法',c:{X:1},txt:'本次我方受傷-1',fn:'redIn',v:1}]},
-G14:{id:'G14',n:'蔓藤妖',col:'G',cost:2,race:'妖',atk:3,fx:[{t:'干擾',c:{X:1},txt:'對手消耗費用+1灰',fn:'costX',v:1},{t:'魔法',c:{G:1,X:1},txt:'從棄牌堆隨機抽1張',fn:'drawDisc',v:1}]},
-G15:{id:'G15',n:'翠葉幻靈',col:'G',cost:2,race:'幻',atk:4,fx:[{t:'魔法',c:{G:1},txt:'回復1點血量',fn:'heal',v:1}]},
-G16:{id:'G16',n:'森境領主',col:'G',cost:3,race:'人',atk:5,fx:[{t:'魔法',c:{B:1,X:1},txt:'敵方單位攻擊力-2',fn:'debuff',v:2},{t:'魔法',c:{G:1},txt:'回復1點血量',fn:'heal',v:1}]},
-G17:{id:'G17',n:'古妖王',col:'G',cost:3,race:'妖',atk:4,fx:[{t:'魔法',c:{G:1,X:2},txt:'回復2血、敵方ATK-1',fn:'healDeb',v:2},{t:'立即',c:{B:1},txt:'抽1張牌',fn:'draw',v:1}]},
-G18:{id:'G18',n:'世界樹幻影',col:'G',cost:3,race:'幻',atk:5,fx:[{t:'魔法',c:{G:1,X:1},txt:'對手隨機棄2張手牌',fn:'oppDisc',v:2},{t:'干擾',c:{X:2},txt:'無效化對手效果',fn:'nullify',v:1}]},
-R01:{id:'R01',n:'燼火劍士',col:'R',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{R:1},txt:'我方單位攻擊力+1',fn:'buff',v:1}]},
-R02:{id:'R02',n:'赤焰斥候',col:'R',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{X:1},txt:'抽1張牌',fn:'draw',v:1}]},
-R03:{id:'R03',n:'烈爪妖',col:'R',cost:1,race:'妖',atk:3,fx:[{t:'魔法',c:{G:1},txt:'回復1點血量',fn:'heal',v:1}]},
-R04:{id:'R04',n:'火刃侍從',col:'R',cost:1,race:'人',atk:2,fx:[{t:'魔法',c:{R:1},txt:'我方單位攻擊力+1',fn:'buff',v:1}]},
-R05:{id:'R05',n:'灰燼狼',col:'R',cost:1,race:'妖',atk:2,fx:[{t:'干擾',c:{X:1},txt:'對手選擇棄1張手牌',fn:'oppDisc',v:1}]},
-R06:{id:'R06',n:'焰心小妖',col:'R',cost:1,race:'妖',atk:3,fx:[{t:'立即',c:{B:1},txt:'抽1張牌',fn:'draw',v:1}]},
-R07:{id:'R07',n:'赤炎術士',col:'R',cost:1,race:'人',atk:2,fx:[{t:'干擾',c:{B:1},txt:'使對手消耗費用+1灰',fn:'costX',v:1}]},
-R08:{id:'R08',n:'爆炎幼龍',col:'R',cost:1,race:'幻',atk:2,fx:[{t:'魔法',c:{R:1},txt:'敵方單位攻擊力-1',fn:'debuff',v:1},{t:'立即',c:{R:1},txt:'抽1張牌',fn:'draw',v:1}]},
-R09:{id:'R09',n:'烈焰騎兵',col:'R',cost:2,race:'人',atk:3,fx:[{t:'魔法',c:{R:1},txt:'我方單位攻擊力+2',fn:'buff',v:2}]},
-R10:{id:'R10',n:'熔岩巨爪',col:'R',cost:2,race:'妖',atk:4,fx:[{t:'魔法',c:{R:1,X:1},txt:'敵方單位攻擊力-1',fn:'debuff',v:1},{t:'干擾',c:{B:1},txt:'對手需多花1藍能量',fn:'costB',v:1}]},
-R11:{id:'R11',n:'爆炎使者',col:'R',cost:2,race:'幻',atk:3,fx:[{t:'干擾',c:{B:1},txt:'對手本回合無法用立即',fn:'sealI',v:1}]},
-R12:{id:'R12',n:'炎息遊俠',col:'R',cost:2,race:'人',atk:3,fx:[{t:'魔法',c:{X:1},txt:'抽2張後棄1張',fn:'drawDisc1',v:2}]},
-R13:{id:'R13',n:'熾火妖',col:'R',cost:2,race:'妖',atk:3,fx:[{t:'干擾',c:{B:1,X:1},txt:'無效對手效果',fn:'nullify',v:1}]},
-R14:{id:'R14',n:'火山幻影',col:'R',cost:2,race:'幻',atk:2,fx:[{t:'魔法',c:{G:1},txt:'回復1點血量',fn:'heal',v:1}]},
-R15:{id:'R15',n:'焚世幻龍',col:'R',cost:3,race:'幻',atk:5,fx:[{t:'魔法',c:{R:1,X:2},txt:'對敵方造成1傷害',fn:'dmgP',v:1}]},
-R16:{id:'R16',n:'炎獄魔王',col:'R',cost:3,race:'妖',atk:5,fx:[{t:'立即',c:{B:1,X:1},txt:'我方單位攻擊力+1(不可干擾)',fn:'buff',v:1},{t:'干擾',c:{X:2},txt:'無效化對手效果',fn:'nullify',v:1}]},
-R17:{id:'R17',n:'赤龍武士',col:'R',cost:3,race:'人',atk:4,fx:[{t:'魔法',c:{R:1,X:1},txt:'我方單位攻擊力+2',fn:'buff',v:2},{t:'魔法',c:{B:1},txt:'抽1張牌',fn:'draw',v:1}]},
-R18:{id:'R18',n:'血焰祭師',col:'R',cost:3,race:'人',atk:4,fx:[{t:'干擾',c:{B:1,X:1},txt:'對手手牌與牌庫頂各棄1',fn:'discHT',v:1},{t:'魔法',c:{R:1},txt:'我方單位攻擊力+1',fn:'buff',v:1}]},
-};
-const IDS=Object.keys(C);
-let S=null, sel=null;
-const PHASES=['draw','summon','pay','effect','battle','clean'];
-function log(m,cls='sys'){const e=document.getElementById('log');const d=document.createElement('div');d.className=cls;d.textContent=`[${new Date().toLocaleTimeString('zh-TW',{hour12:false})}] ${m}`;e.appendChild(d);e.scrollTop=e.scrollHeight}
-function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function mkDeck(f){let p=IDS.slice();if(f==='B'||f==='G'||f==='R')p=p.filter(id=>id[0]===f);shuffle(p);const d=p.slice(0,Math.min(20,p.length));while(d.length<20){const x=IDS.filter(i=>!d.includes(i));shuffle(x);d.push(...x.slice(0,20-d.length))}return shuffle(d)}
-function mkPlayer(f){const deck=mkDeck(f);const life=[];for(let i=0;i<6&&deck.length;i++)life.push(deck.pop());return{deck,hand:[],field:[],energy:{R:0,G:0,B:0,X:0},energyCards:[],discard:[],life,extraX:0,extraB:0,nullNext:false,sealM:false,sealI:false,pending:null,paid:false,atkMod:0}}
-function boot(f){document.getElementById('start').classList.add('hidden');document.getElementById('game').classList.remove('hidden');const of=['B','G','R'].filter(x=>x!==f);const of2=f==='MIX'?'MIX':of[Math.floor(Math.random()*of.length)]||'MIX';S={p:mkPlayer(f),e:mkPlayer(of2),phase:'draw',turn:1,first:true,effectDone:false};for(let i=0;i<5;i++){draw(S.p,1,true);draw(S.e,1,true)}log('遊戲開始｜你為'+(f==='B'?'潮汐藍':f==='G'?'森境綠':f==='R'?'燼火紅':'混合')+'牌組，生命牌各6張','sys');log('第一回合不抽牌。請選擇1張角色卡進行召喚。','sys');S.phase='summon';setPhase();render()}
-function draw(pl,n=1,silent=false){for(let i=0;i<n;i++){if(!pl.deck.length){if(pl.life.length){pl.life.pop();if(!silent)log((pl===S.p?'我方':'敵方')+'牌庫空，失去1生命牌','sys')}continue}const id=pl.deck.pop();pl.hand.push(id);if(!silent)log((pl===S.p?'我方':'敵方')+'抽到【'+C[id].n+'】',pl===S.p?'p1':'p2')}}
-function setPhase(){document.querySelectorAll('.ph').forEach(el=>{el.classList.remove('active','done');const i=PHASES.indexOf(el.dataset.p),cur=PHASES.indexOf(S.phase);if(i===cur)el.classList.add('active');else if(i<cur)el.classList.add('done')});document.getElementById('turnTag').textContent=`第${S.turn}回合｜${S.phase==='summon'?'召喚階段':S.phase==='pay'?'支付能量':S.phase==='effect'?'效果階段':S.phase==='battle'?'戰鬥結算':S.phase==='clean'?'回合結束':'—'}`}
-function totalEn(pl){return pl.energy.R+pl.energy.G+pl.energy.B+pl.energy.X}
-function canPay(cost,pl){const need={R:cost.R||0,G:cost.G||0,B:(cost.B||0)+(pl.extraB||0),X:(cost.X||0)+(pl.extraX||0)};let e={...pl.energy};for(const k of['R','G','B']){if(e[k]<need[k])return false;e[k]-=need[k]}return (e.R+e.G+e.B+e.X)>=need.X}
-function doPay(cost,pl){const need={R:cost.R||0,G:cost.G||0,B:(cost.B||0)+(pl.extraB||0),X:(cost.X||0)+(pl.extraX||0)};for(const k of['R','G','B'])pl.energy[k]-=need[k];let g=need.X;const ux=Math.min(pl.energy.X,g);pl.energy.X-=ux;g-=ux;for(const k of['R','G','B']){if(g<=0)break;const u=Math.min(pl.energy[k],g);pl.energy[k]-=u;g-=u}const spent=(need.R+need.G+need.B+need.X);for(let i=0;i<spent&&pl.energyCards.length;i++)pl.discard.push(pl.energyCards.pop());pl.extraX=0;pl.extraB=0}
-function costStr(c){const a=[];if(c.R)a.push('紅'+c.R);if(c.G)a.push('綠'+c.G);if(c.B)a.push('藍'+c.B);if(c.X)a.push('灰'+c.X);return a.join('+')||'0'}
-function cardDOM(id,opt={}){const d=document.createElement('div');const c=id?C[id]:null;d.className='card'+(c?' col-'+c.col:'')+(opt.sel?' sel':'')+(opt.energy?' energy':'')+(opt.back?' back':'');if(opt.back){d.textContent='🂠';return d}const face=document.createElement('div');face.className='face';face.innerHTML=`<div class="nm">${c.n}</div><div class="fx">${c.fx.map(f=>f.t+':'+f.txt).join('<br>')}</div>`;d.appendChild(face);const cost=document.createElement('div');cost.className='cost';cost.textContent=c.cost;d.appendChild(cost);if(opt.showAtk){const a=document.createElement('div');a.className='atk';a.textContent=(c.atk+(opt.mod||0));d.appendChild(a)}const r=document.createElement('div');r.className='race';r.textContent=c.race[0];d.appendChild(r);if(opt.onclick)d.onclick=opt.onclick;return d}
-function render(){if(!S)return;const p=S.p,e=S.e;document.getElementById('pLife').textContent=p.life.length;document.getElementById('pDeck').textContent=p.deck.length;document.getElementById('pDisc').textContent=p.discard.length;document.getElementById('pHandN').textContent=p.hand.length;document.getElementById('pR').textContent=p.energy.R;document.getElementById('pG').textContent=p.energy.G;document.getElementById('pB').textContent=p.energy.B;document.getElementById('pX').textContent=p.energy.X;document.getElementById('eLife').textContent=e.life.length;document.getElementById('eDeck').textContent=e.deck.length;document.getElementById('eDisc').textContent=e.discard.length;document.getElementById('eHandN').textContent=e.hand.length;document.getElementById('eEn').textContent=`R${e.energy.R} G${e.energy.G} B${e.energy.B} X${e.energy.X}`;const ph=document.getElementById('pHand');ph.innerHTML='';p.hand.forEach((id,i)=>ph.appendChild(cardDOM(id,{sel:sel&&sel.z==='hand'&&sel.i===i,onclick:()=>select('hand',i)})));const pf=document.getElementById('pField');pf.innerHTML='';p.field.forEach((u,i)=>pf.appendChild(cardDOM(u.id,{showAtk:true,mod:u.mod||0,sel:sel&&sel.z==='field'&&sel.i===i,onclick:()=>select('field',i)})));const pe=document.getElementById('pEnergy');pe.innerHTML='';p.energyCards.forEach((id,i)=>pe.appendChild(cardDOM(id,{energy:true})));const ef=document.getElementById('eField');ef.innerHTML='';e.field.forEach((u,i)=>ef.appendChild(cardDOM(u.id,{showAtk:true,mod:u.mod||0})));const eh=document.getElementById('eHand');eh.innerHTML='';e.hand.forEach(()=>eh.appendChild(cardDOM(null,{back:true})));updBtns();checkWin()}
-function select(z,i){if(S.phase==='clean')return;sel={z,i};const info=document.getElementById('selInfo');if(z==='hand'){const c=C[S.p.hand[i]];info.textContent=`手牌【${c.n}】費用${c.cost} ATK${c.atk}｜可轉能量或選為本回合召喚`}else if(z==='field'){const u=S.p.field[i];const c=C[u.id];info.textContent=`戰場【${c.n}】ATK${c.atk+(u.mod||0)}｜${c.fx.map(f=>f.t+' '+costStr(f.c)+':'+f.txt).join(' ／ ')}`}render()}
-function updBtns(){const bE=document.getElementById('btnEnergy'),bS=document.getElementById('btnSummon'),bP=document.getElementById('btnPay');const bF=document.getElementById('btnEffect'),bSk=document.getElementById('btnSkipFx'),bB=document.getElementById('btnBattle'),bEnd=document.getElementById('btnEnd');[bE,bS,bP,bF,bSk,bB,bEnd].forEach(b=>b.disabled=true);if(!S)return;if(S.phase==='summon'){bE.disabled=!(sel&&sel.z==='hand');bS.disabled=!(sel&&sel.z==='hand')}if(S.phase==='pay'){bE.disabled=!(sel&&sel.z==='hand');bP.disabled=!S.p.pending||S.p.paid}if(S.phase==='effect'){bF.disabled=!(sel&&sel.z==='field'&&S.p.field.length);bSk.disabled=false;bB.disabled=false}if(S.phase==='battle'){bB.disabled=false}if(S.phase==='clean'){bEnd.disabled=false}}
-function actToEnergy(){if(!sel||sel.z!=='hand')return;const p=S.p;const id=p.hand.splice(sel.i,1)[0];const c=C[id];p.energy[c.col]++;p.energyCards.push(id);log(`我方將【${c.n}】轉為${c.col==='R'?'紅':c.col==='G'?'綠':'藍'}能量`,'p1');sel=null;render()}
-function actSummon(){if(S.phase!=='summon'||!sel||sel.z!=='hand')return;const p=S.p;const id=p.hand[sel.i];p.pending={id,fromHand:true,idx:sel.i};log(`我方選擇召喚【${C[id].n}】（費用${C[id].cost}），進入支付階段`,'p1');aiSummon();S.phase='pay';setPhase();log('雙方同時公開召喚角色，請支付能量','sys');sel=null;render()}
-function aiSummon(){const e=S.e;let best=-1,bestScore=-99;e.hand.forEach((id,i)=>{const c=C[id];let sc=c.atk-c.cost;if(totalEn(e)>=c.cost)sc+=5;if(sc>bestScore){bestScore=sc;best=i}});if(best<0&&e.hand.length)best=0;if(best>=0){const id=e.hand[best];e.pending={id,fromHand:true,idx:best};log(`敵方選擇召喚【${C[id].n}】`,'p2')}else{if(e.deck.length){const id=e.deck.pop();e.pending={id,forced:true};log(`敵方強制翻牌召喚【${C[id].n}】`,'p2')}}}
-function actPay(){if(S.phase!=='pay'||!S.p.pending||S.p.paid)return;const p=S.p;const c=C[S.p.pending.id];const need=c.cost;while(totalEn(p)<need){if(p.hand.length){let idx=p.hand.findIndex((_,i)=>!(p.pending.fromHand&&i===p.pending.idx));if(idx<0)idx=0;const id=p.hand.splice(idx,1)[0];if(p.pending.fromHand&&p.pending.idx>idx)p.pending.idx--;p.energy[C[id].col]++;p.energyCards.push(id);log(`自動將【${C[id].n}】轉能量以支付`,'p1')}else if(p.deck.length){const id=p.deck.pop();p.energy[C[id].col]++;p.energyCards.push(id);log(`從牌庫頂翻【${C[id].n}】作能量`,'p1')}else if(p.life.length){const id=p.life.pop();p.energy[C[id].col]++;p.energyCards.push(id);log(`從生命牌翻【${C[id].n}】作能量`,'sys')}else{log('無法支付完整費用，我方敗北','sys');S.p.life=[];render();return}}let left=need;if(p.energy[c.col]>=left){p.energy[c.col]-=left;left=0}else{left-=p.energy[c.col];p.energy[c.col]=0;for(const k of['X','R','G','B']){if(left<=0)break;const u=Math.min(p.energy[k],left);p.energy[k]-=u;left-=u}}for(let i=0;i<need&&p.energyCards.length;i++)p.discard.push(p.energyCards.pop());if(p.pending.fromHand)p.hand.splice(p.pending.idx,1);p.field=[{id:p.pending.id,mod:0}];p.paid=true;p.pending=null;log(`我方成功召喚【${c.n}】登場 ATK${c.atk}`,'p1');aiPay();S.phase='effect';S.effectDone=false;setPhase();log('進入效果階段：先攻可發動魔法/立即，後攻可干擾。完成後點「進入戰鬥結算」','sys');render()}
-function aiPay(){const e=S.e;if(!e.pending)return;const c=C[e.pending.id];let need=c.cost;while(totalEn(e)<need){if(e.hand.length){const id=e.hand.shift();e.energy[C[id].col]++;e.energyCards.push(id)}else if(e.deck.length){const id=e.deck.pop();e.energy[C[id].col]++;e.energyCards.push(id)}else if(e.life.length){const id=e.life.pop();e.energy[C[id].col]++;e.energyCards.push(id)}else{log('敵方無法支付，敵方敗北','sys');e.life=[];return}}let left=need;if(e.energy[c.col]>=left){e.energy[c.col]-=left;left=0}else{left-=e.energy[c.col];e.energy[c.col]=0;for(const k of['X','R','G','B']){if(left<=0)break;const u=Math.min(e.energy[k],left);e.energy[k]-=u;left-=u}}for(let i=0;i<need&&e.energyCards.length;i++)e.discard.push(e.energyCards.pop());if(e.pending.fromHand)e.hand.splice(e.pending.idx,1);e.field=[{id:e.pending.id,mod:0}];e.pending=null;log(`敵方成功召喚【${c.n}】登場`,'p2')}
-function actEffect(){if(S.phase!=='effect'||!sel||sel.z!=='field')return;const u=S.p.field[sel.i];const c=C[u.id];const ok=c.fx.filter(f=>canPay(f.c,S.p));if(!ok.length){log('能量不足，無法發動效果','sys');return}if(ok.length===1){runFx(S.p,u,ok[0]);S.effectDone=true}else{document.getElementById('mTitle').textContent='選擇效果 - '+c.n;document.getElementById('mBody').innerHTML=ok.map((f,i)=>`<label style="display:block;margin:6px 0"><input type="radio" name="fx" value="${c.fx.indexOf(f)}"> ${f.t} ${costStr(f.c)}：${f.txt}</label>`).join('');document.getElementById('mOk').onclick=()=>{const r=document.querySelector('input[name=fx]:checked');if(!r)return;closeModal();runFx(S.p,u,c.fx[+r.value]);S.effectDone=true;render()};document.getElementById('modal').classList.add('show')}setTimeout(aiEffect,400)}
-function actSkipEffect(){S.effectDone=true;log('我方跳過效果','p1');aiEffect();render()}
-function aiEffect(){const e=S.e;if(!e.field.length)return;const u=e.field[0];const c=C[u.id];for(const f of c.fx){if(canPay(f.c,e)){runFx(e,u,f);break}}}
-function runFx(pl,unit,f){if(!canPay(f.c,pl)){log('支付失敗','sys');return}doPay(f.c,pl);const isP=pl===S.p;const opp=isP?S.e:S.p;log(`${isP?'我方':'敵方'}發動【${C[unit.id].n}】${f.t}：${f.txt}`,isP?'fx':'p2');switch(f.fn){case 'draw':draw(pl,f.v||1);break;case 'drawDisc':if(pl.discard.length){const i=Math.floor(Math.random()*pl.discard.length);const id=pl.discard.splice(i,1)[0];pl.hand.push(id);log(`從棄牌獲得【${C[id].n}】`,isP?'p1':'p2')}break;case 'buff':unit.mod=(unit.mod||0)+(f.v||1);log(`攻擊力+${f.v}`,isP?'p1':'p2');break;case 'debuff':if(opp.field.length){opp.field[0].mod=(opp.field[0].mod||0)-(f.v||1);log(`敵方單位攻擊力-${f.v}`,isP?'p1':'p2')}break;case 'heal':log(`回復概念生命（目前生命牌${pl.life.length}）`,isP?'p1':'p2');break;case 'dmgP':for(let i=0;i<(f.v||1)&&opp.life.length;i++){opp.discard.push(opp.life.pop())}log(`造成${f.v}點傷害，對手生命牌剩${opp.life.length}`,isP?'bat':'p2');break;case 'oppDisc':for(let i=0;i<(f.v||1)&&opp.hand.length;i++){const id=opp.hand.splice(Math.floor(Math.random()*opp.hand.length),1)[0];opp.discard.push(id);log(`對手棄【${C[id].n}】`,isP?'p1':'p2')}break;case 'costX':opp.extraX=(opp.extraX||0)+(f.v||1);break;case 'costB':opp.extraB=(opp.extraB||0)+(f.v||1);break;case 'nullify':case 'nullM':opp.nullNext=true;break;case 'drawRet':draw(pl,f.v||2);if(pl.hand.length){const id=pl.hand.pop();pl.deck.push(id);shuffle(pl.deck)}break;case 'drawDisc1':draw(pl,f.v||2);if(pl.hand.length){pl.discard.push(pl.hand.pop())}break;case 'healDeb':log('回復與減攻（簡化）',isP?'p1':'p2');if(opp.field.length)opp.field[0].mod=(opp.field[0].mod||0)-1;break;case 'mill':for(let i=0;i<2&&opp.hand.length;i++){opp.deck.push(opp.hand.pop())}shuffle(opp.deck);draw(opp,1);break;case 'bounce':if(opp.hand.length){opp.deck.push(opp.hand.pop());shuffle(opp.deck);draw(opp,1)}break;case 'discHT':if(opp.hand.length)opp.discard.push(opp.hand.pop());if(opp.deck.length)opp.discard.push(opp.deck.pop());break;case 'sealM':opp.sealM=true;break;case 'sealI':opp.sealI=true;break;default:log(`效果 ${f.fn} 已觸發`,'sys')}sel=null;render()}
-function actBattle(){if(S.phase!=='effect'&&S.phase!=='battle')return;S.phase='battle';setPhase();const pAtk=S.p.field.length?(C[S.p.field[0].id].atk+(S.p.field[0].mod||0)):0;const eAtk=S.e.field.length?(C[S.e.field[0].id].atk+(S.e.field[0].mod||0)):0;log(`戰鬥力比較：我方 ${pAtk}  vs  敵方 ${eAtk}`,'bat');if(pAtk>eAtk){const d=pAtk-eAtk;const rem=Math.min(d,S.e.life.length);for(let i=0;i<rem;i++)S.e.discard.push(S.e.life.pop());log(`我方勝出，敵方失去 ${rem} 張生命牌 → 剩 ${S.e.life.length}`,'bat')}else if(eAtk>pAtk){const d=eAtk-pAtk;const rem=Math.min(d,S.p.life.length);for(let i=0;i<rem;i++)S.p.discard.push(S.p.life.pop());log(`敵方勝出，我方失去 ${rem} 張生命牌 → 剩 ${S.p.life.length}`,'bat')}else{if(S.p.life.length)S.p.discard.push(S.p.life.pop());if(S.e.life.length)S.e.discard.push(S.e.life.pop());log('平手，雙方各失去 1 張生命牌','bat')}S.phase='clean';setPhase();log('戰鬥結束。點「結束回合」進行整理並進入下一回合','sys');render()}
-function actEndTurn(){if(S.phase!=='clean')return;S.p.field.forEach(u=>S.p.discard.push(u.id));S.p.field=[];S.e.field.forEach(u=>S.e.discard.push(u.id));S.e.field=[];S.p.paid=false;S.e.paid=false;S.p.pending=null;S.e.pending=null;S.p.sealM=false;S.p.sealI=false;S.e.sealM=false;S.e.sealI=false;while(S.p.hand.length>7)S.p.discard.push(S.p.hand.pop());while(S.e.hand.length>7)S.e.discard.push(S.e.hand.pop());S.turn++;log(`—— 第 ${S.turn} 回合開始 ——`,'sys');draw(S.p,2);draw(S.e,2);S.phase='summon';setPhase();log('請選擇本回合要召喚的角色卡','sys');sel=null;render()}
-function checkWin(){if(!S)return;if(S.p.life.length<=0){log('★★★ 你的生命牌耗盡，敵方獲勝 ★★★','p2');S.phase='end'}else if(S.e.life.length<=0){log('★★★ 敵方生命牌耗盡，你獲勝！★★★','p1');S.phase='end'}}
-function closeModal(){document.getElementById('modal').classList.remove('show')}
+const DATA = {"cards":[{"id":"R01","name":"燼火劍士","color":"R","cost":1,"race":"人","atk":2,"fx":["魔法/紅1：我方單位攻擊力+1。"]},{"id":"R02","name":"赤焰斥候","color":"R","cost":1,"race":"人","atk":2,"fx":["魔法/灰1：抽1張牌。"]},{"id":"R03","name":"烈爪妖","color":"R","cost":1,"race":"妖","atk":3,"fx":["魔法/綠1：回復1點血量。"]},{"id":"R04","name":"火刃侍從","color":"R","cost":1,"race":"人","atk":2,"fx":["魔法/紅1：我方單位攻擊力+1。"]},{"id":"R05","name":"灰燼狼","color":"R","cost":1,"race":"妖","atk":2,"fx":["干擾/灰1：對手選擇棄1張手牌。"]},{"id":"R06","name":"焰心小妖","color":"R","cost":1,"race":"妖","atk":3,"fx":["立即/藍1：抽1張牌(可被干擾)"]},{"id":"R07","name":"赤炎術士","color":"R","cost":1,"race":"人","atk":2,"fx":["干擾/藍1：使對手消耗費用+1灰。"]},{"id":"R08","name":"爆炎幼龍","color":"R","cost":1,"race":"幻","atk":2,"fx":["魔法/紅1：敵方單位攻擊力-1。","立即/紅1：抽1張牌"]},{"id":"R09","name":"烈焰騎兵","color":"R","cost":2,"race":"人","atk":3,"fx":["魔法/紅1：我方單位攻擊力+2。"]},{"id":"R10","name":"熔岩巨爪","color":"R","cost":2,"race":"妖","atk":4,"fx":["魔法/紅1+灰1：敵方單位攻擊力-1。","干擾/藍1：對手需多花費1張藍色能量。"]},{"id":"R11","name":"爆炎使者","color":"R","cost":2,"race":"幻","atk":3,"fx":["干擾/藍1：對手本回合無法使用立即效果。"]},{"id":"R12","name":"炎息遊俠","color":"R","cost":2,"race":"人","atk":3,"fx":["魔法/灰1：抽2張牌，然後棄1張牌。"]},{"id":"R13","name":"熾火妖","color":"R","cost":2,"race":"妖","atk":3,"fx":["干擾/藍1+灰1：無效化對手效果。"]},{"id":"R14","name":"火山幻影","color":"R","cost":2,"race":"幻","atk":2,"fx":["魔法/綠1：回復1點血量。"]},{"id":"R15","name":"焚世幻龍","color":"R","cost":3,"race":"幻","atk":5,"fx":["魔法/紅1+灰2：對敵方玩家直接造成1點傷害(移至棄牌堆)"]},{"id":"R16","name":"炎獄魔王","color":"R","cost":3,"race":"妖","atk":5,"fx":["立即/藍1+灰1：我方單位攻擊力+1(不可被干擾)。","干擾/灰2：無效化對手效果。"]},{"id":"R17","name":"赤龍武士","color":"R","cost":3,"race":"人","atk":4,"fx":["魔法/紅1+灰1：我方單位攻擊力+2。","魔法/藍1：抽1張牌。"]},{"id":"R18","name":"血焰祭師","color":"R","cost":3,"race":"人","atk":4,"fx":["干擾/藍1+灰1：對手從手牌、牌庫頂各棄一張。","魔法/紅1：我方單位攻擊力+1。"]},{"id":"G01","name":"森境護衛","color":"G","cost":1,"race":"人","atk":2,"fx":["魔法/藍1：抽1張牌。"]},{"id":"G02","name":"苔角小妖","color":"G","cost":1,"race":"妖","atk":2,"fx":["干擾/灰1：對手選擇棄1張手牌。"]},{"id":"G03","name":"葉刃護衛","color":"G","cost":1,"race":"人","atk":2,"fx":["魔法/藍1：敵方單位攻擊力-1"]},{"id":"G04","name":"藤蔓小妖","color":"G","cost":1,"race":"妖","atk":2,"fx":["干擾/灰1：對手選擇棄1張手牌。"]},{"id":"G05","name":"森靈幻影","color":"G","cost":1,"race":"幻","atk":3,"fx":["干擾/綠1：無效魔法效果。"]},{"id":"G06","name":"青木術士","color":"G","cost":1,"race":"人","atk":2,"fx":["魔法/灰1：抽1張牌。"]},{"id":"G07","name":"翠葉斥候","color":"G","cost":1,"race":"人","atk":2,"fx":["魔法/綠1：敵方單位攻擊力-1。"]},{"id":"G08","name":"荊棘妖","color":"G","cost":1,"race":"妖","atk":3,"fx":["魔法/綠1：回復1點血量。"]},{"id":"G09","name":"巡林獵手","color":"G","cost":2,"race":"人","atk":4,"fx":["魔法/綠1：回復1點血量。","干擾/藍1：無效魔法效果。"]},{"id":"G10","name":"苔石巨人","color":"G","cost":2,"race":"妖","atk":3,"fx":["魔法/綠1+灰1：敵方單位攻擊力-2"]},{"id":"G11","name":"綠影刺客","color":"G","cost":2,"race":"幻","atk":3,"fx":["干擾/藍1+灰1：無效化對手效果。","魔法/綠1+灰1：從棄牌堆隨機抽1張牌。"]},{"id":"G12","name":"古樹守護","color":"G","cost":2,"race":"人","atk":3,"fx":["魔法/藍1：抽1張牌。","魔法/灰1：敵方單位傷害-1。"]},{"id":"G13","name":"蔓藤妖","color":"G","cost":2,"race":"妖","atk":3,"fx":["干擾/灰1：對手消耗費用+1灰。","魔法/綠1+灰1：從棄牌堆隨機抽1張牌。"]},{"id":"G14","name":"翠葉幻靈","color":"G","cost":2,"race":"幻","atk":4,"fx":["魔法/綠1：回復1點血量。"]},{"id":"G15","name":"古木守望者","color":"G","cost":3,"race":"人","atk":5,"fx":["干擾/藍1+灰1：對手需多花費1張藍色能量。","魔法/綠1+灰1：敵方單位傷害-2。"]},{"id":"G16","name":"森境領主","color":"G","cost":3,"race":"人","atk":5,"fx":["魔法/藍1+灰1：敵方單位攻擊力-2","魔法/綠1：回復1點血量。"]},{"id":"G17","name":"古妖王","color":"G","cost":3,"race":"妖","atk":4,"fx":["魔法/綠1+灰2：回復2點血量、敵方單位攻擊力-1","立即/藍1：抽1張牌。"]},{"id":"G18","name":"世界樹幻影","color":"G","cost":3,"race":"幻","atk":5,"fx":["魔法/綠1+灰1：對手隨機棄2張手牌。","干擾/灰2：無效化對手效果。"]},{"id":"B01","name":"潮汐學徒","color":"B","cost":1,"race":"人","atk":2,"fx":["魔法/紅1：我方單位攻擊力+1。","魔法/綠1+灰1：從棄牌堆隨機抽1張牌。"]},{"id":"B02","name":"霧影小妖","color":"B","cost":1,"race":"妖","atk":2,"fx":["干擾/藍1：使對手消耗費用+1灰。"]},{"id":"B03","name":"泡沫幻魚","color":"B","cost":1,"race":"幻","atk":3,"fx":["立即/藍1：將1張卡牌視為任意顏色(可被干擾)。"]},{"id":"B04","name":"潮汐守衛","color":"B","cost":1,"race":"人","atk":2,"fx":["魔法/藍1：抽1張牌。"]},{"id":"B05","name":"泡沫海貝","color":"B","cost":1,"race":"妖","atk":2,"fx":["干擾/灰1：對手選擇棄1張手牌。"]},{"id":"B06","name":"泡沫精靈","color":"B","cost":1,"race":"幻","atk":3,"fx":["魔法/藍1：對手1張手牌回牌庫並補1張。"]},{"id":"B07","name":"冰晶學徒","color":"B","cost":1,"race":"人","atk":2,"fx":["魔法/灰1：敵方單位攻擊力-1。"]},{"id":"B08","name":"深海斥候","color":"B","cost":1,"race":"妖","atk":2,"fx":["魔法/藍1：從棄牌堆隨機抽1張牌。"]},{"id":"B09","name":"鏡湖幻靈","color":"B","cost":2,"race":"幻","atk":2,"fx":["魔法/綠1+灰1：抽2張牌，然後放回1張。","干擾/藍1+灰1：無效化對手效果。"]},{"id":"B10","name":"鏡湖術士","color":"B","cost":2,"race":"人","atk":3,"fx":["魔法/藍1+灰1：抽2張牌，然後放回1張。"]},{"id":"B11","name":"霧隱妖","color":"B","cost":2,"race":"妖","atk":3,"fx":["魔法/紅1+灰1：對敵方玩家直接造成1點傷害"]},{"id":"B12","name":"幻影魚群","color":"B","cost":2,"race":"幻","atk":3,"fx":["魔法/綠1：回復1點血量。","魔法/紅1：敵方單位攻擊力-1。"]},{"id":"B13","name":"寒冰使者","color":"B","cost":2,"race":"人","atk":2,"fx":["魔法/紅1：我方單位攻擊力+1。"]},{"id":"B14","name":"水霧幻靈","color":"B","cost":2,"race":"幻","atk":3,"fx":["立即/藍1+灰1：抽1張牌(不可被干擾)。"]},{"id":"B15","name":"冰晶妖王","color":"B","cost":3,"race":"妖","atk":4,"fx":["魔法/綠1+灰1：複製場上任意效果(費用2以下)。","魔法/藍1+灰1：敵方單位傷害-2。"]},{"id":"B16","name":"冰晶女皇","color":"B","cost":3,"race":"妖","atk":5,"fx":["魔法/藍1+灰1：敵方單位傷害-2。","干擾/綠1+灰1：對手將手牌中的2張牌放回牌庫，洗勻後再抽1張。"]},{"id":"B17","name":"深海幻龍","color":"B","cost":3,"race":"幻","atk":4,"fx":["魔法/藍1+灰1：複製場上任意效果(費用2以下)。","立即/紅1：抽1張牌。"]},{"id":"B18","name":"潮汐領主","color":"B","cost":3,"race":"人","atk":4,"fx":["魔法/藍1+灰1：抽2張牌。","立即/灰2：禁止使用魔法效果。"]}],"leaders":[{"id":"L01","name":"犼太郎","race":"妖","hp":6},{"id":"L02","name":"阿龍","race":"幻","hp":6},{"id":"L03","name":"巨魔","race":"人","hp":6},{"id":"L04","name":"花拉","race":"幻","hp":6}]};
+const BACK = "data:image/jpeg;base64,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";
 </script>
-</body>
-</html>
+<script>
+// ===== 規則引擎 v1.0.2 =====
+// 與畫面無關；透過 IO 物件和畫面（或測試程式）溝通。
+const CN = { R: '紅', G: '綠', B: '藍', X: '灰' };
+const TN = { magic: '魔法', inter: '干擾', instant: '立即' };
+const IO = { ask: null, choose: null, render: () => {}, sleep: () => Promise.resolve(), onLog: () => {} };
+
+function parseOp(s) {
+  let m;
+  if ((m = s.match(/我方單位攻擊力\+(\d+)/))) return { op: 'buff', n: +m[1] };
+  if ((m = s.match(/敵方單位攻擊力-(\d+)/))) return { op: 'debuff', n: +m[1] };
+  if ((m = s.match(/敵方單位傷害-(\d+)/))) return { op: 'reduce', n: +m[1] };
+  if (/抽2張牌，然後棄1張/.test(s)) return { op: 'drawDiscard' };
+  if (/抽2張牌，然後放回1張/.test(s)) return { op: 'drawReturn' };
+  if (/手牌中的2張牌放回牌庫/.test(s)) return { op: 'return2draw1' };
+  if (/對手1張手牌回牌庫/.test(s)) return { op: 'oppMulligan' };
+  if (/從棄牌堆隨機抽1張/.test(s)) return { op: 'salvage' };
+  if ((m = s.match(/^抽(\d+)張牌/))) return { op: 'draw', n: +m[1] };
+  if ((m = s.match(/回復(\d+)點血量/))) return { op: 'heal', n: +m[1] };
+  if ((m = s.match(/直接造成(\d+)點傷害\(移至棄牌堆\)/))) return { op: 'burnDiscard', n: +m[1] };
+  if ((m = s.match(/直接造成(\d+)點傷害/))) return { op: 'burn', n: +m[1] };
+  if ((m = s.match(/對手隨機棄(\d+)張手牌/))) return { op: 'randDiscard', n: +m[1] };
+  if (/對手選擇棄1張手牌/.test(s)) return { op: 'oppDiscard' };
+  if (/手牌、牌庫頂各棄一張/.test(s)) return { op: 'discardHandTop' };
+  if (/消耗費用\+1灰/.test(s)) return { op: 'tax', cost: { X: 1 } };
+  if (/多花費1張藍色能量/.test(s)) return { op: 'tax', cost: { B: 1 } };
+  if (/無法使用立即效果/.test(s)) return { op: 'noInstant' };
+  if (/無效魔法效果/.test(s)) return { op: 'negate', magicOnly: true };
+  if (/無效化?對手效果/.test(s)) return { op: 'negate' };
+  if (/複製場上任意效果/.test(s)) return { op: 'copy' };
+  if (/禁止使用魔法效果/.test(s)) return { op: 'seal' };
+  if (/視為任意顏色/.test(s)) return { op: 'wild' };
+  return { op: 'unknown', s };
+}
+function fullCost(c) { return { R: c.R || 0, G: c.G || 0, B: c.B || 0, X: c.X || 0 }; }
+function parseFx(raw) {
+  const m = raw.match(/^(魔法|干擾|立即)\/([^：:]+)[：:](.*)$/);
+  if (!m) return { raw, type: 'magic', cost: fullCost({}), total: 0, body: raw, ops: [{ op: 'unknown' }], supported: false, interferable: true };
+  const type = { 魔法: 'magic', 干擾: 'inter', 立即: 'instant' }[m[1]];
+  const cost = fullCost({});
+  m[2].split('+').forEach(s => { const k = s.match(/(紅|綠|藍|灰)(\d+)/); if (k) cost[{ 紅: 'R', 綠: 'G', 藍: 'B', 灰: 'X' }[k[1]]] += +k[2]; });
+  const body = m[3].trim().replace(/[。．]+$/, '');
+  let interferable = true;
+  if (type === 'inter') interferable = false;
+  // 立即效果：卡面寫「可被干擾」才能被干擾，沒寫視為不可被干擾（依設計說明第 5 點）
+  if (type === 'instant') interferable = /\(可被干擾\)/.test(body);
+  const clean = body.replace(/\(不?可被干擾\)/g, '').replace(/[。]/g, '');
+  let ops = clean.split('、').map(s => parseOp(s.trim()));
+  if (ops.some(o => o.op === 'unknown')) ops = [parseOp(clean)];
+  return { raw, type, cost, total: cost.R + cost.G + cost.B + cost.X, body: clean, ops, supported: ops.every(o => o.op !== 'unknown'), interferable };
+}
+function costText(c) {
+  const parts = ['R', 'G', 'B', 'X'].filter(k => c[k]).map(k => CN[k] + c[k]);
+  return parts.length ? parts.join('+') : '免費';
+}
+
+let DEFS = {}, LEADERS = [];
+function loadData(data) {
+  DEFS = {};
+  data.cards.forEach(c => { DEFS[c.id] = { ...c, fxP: c.fx.map(parseFx) }; });
+  LEADERS = data.leaders;
+}
+let UID = 0;
+function inst(def) { return { ...def, uid: ++UID, wild: false, usedFx: [] }; }
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+let G = null;
+function freshFlags() { return { magic: false, instant: false, noInstant: false, sealed: false, mod: 0, reduce: 0 }; }
+function mkPlayer(name, leader, ids, ai) {
+  const deck = shuffle(ids.map(id => inst(DEFS[id])));
+  const p = { name, ai, leader, hpMax: leader.hp, deck, life: [], hand: [], discard: [], field: null, consume: [], flags: freshFlags(), hiddenPick: false };
+  p.life = deck.splice(deck.length - leader.hp);
+  p.hand = deck.splice(deck.length - 5);
+  return p;
+}
+function newGame(cfg) {
+  UID = 0;
+  G = { pl: [mkPlayer(cfg.names[0], cfg.leaders[0], cfg.decks[0], cfg.ai[0]), mkPlayer(cfg.names[1], cfg.leaders[1], cfg.decks[1], cfg.ai[1])],
+        turn: 1, first: cfg.first, phase: 'setup', step: null, over: null, log: [], result: null };
+  log(`對局開始：${G.pl[0].name}（${cfg.leaders[0].name}）對 ${G.pl[1].name}（${cfg.leaders[1].name}）`, 'sys');
+  log(`雙方各抽 ${cfg.leaders[0].hp} 張作為生命牌堆、5 張起始手牌。猜拳由 ${G.pl[cfg.first].name} 第 1 回合先攻。`, 'sys');
+  return G;
+}
+function log(text, who = 'sys') { const e = { t: G ? G.turn : 0, text, who }; G.log.push(e); IO.onLog(e); }
+const opp = i => 1 - i;
+const P = i => G.pl[i];
+
+// ---- 牌堆操作 ----
+function draw(i, n) {
+  const p = P(i);
+  for (let k = 0; k < n; k++) {
+    if (p.deck.length) p.hand.push(p.deck.pop());
+    else if (p.life.length) { p.hand.push(p.life.pop()); log(`${p.name} 的牌庫已空，改從生命牌堆抽 1 張（生命剩 ${p.life.length}）`, i); }
+  }
+}
+function damage(i, n, toHand) {
+  const p = P(i); const k = Math.min(n, p.life.length);
+  for (let a = 0; a < k; a++) { const c = p.life.pop(); (toHand ? p.hand : p.discard).push(c); }
+  if (k) log(`${p.name} 失去 ${k} 張生命牌${toHand ? '，加入手牌' : '，移至棄牌堆'}（生命剩 ${p.life.length}）`, i);
+}
+function heal(i, n) {
+  const p = P(i); const k = Math.min(n, p.hpMax - p.life.length, p.discard.length);
+  for (let a = 0; a < k; a++) p.life.push(p.discard.pop());
+  log(k ? `${p.name} 從棄牌堆頂回復 ${k} 張到生命牌堆（生命 ${p.life.length}）` : `${p.name} 的回復沒有效果（生命已滿或棄牌堆為空）`, i);
+}
+function removeFrom(arr, card) { const k = arr.indexOf(card); if (k >= 0) arr.splice(k, 1); return k >= 0; }
+function toEnergy(i, card) {
+  const p = P(i); removeFrom(p.hand, card);
+  p.consume.push({ card, color: card.color, wild: card.wild, spent: false });
+  log(`${p.name} 將【${card.name}】轉為${card.wild ? '任意色' : CN[card.color] + '色'}能量（橫置於消耗區）`, i);
+}
+function checkOver() {
+  if (G.over) return true;
+  const d = G.pl.map(p => p.life.length === 0);
+  if (d[0] && d[1]) G.over = { draw: true };
+  else if (d[0]) G.over = { winner: 1 };
+  else if (d[1]) G.over = { winner: 0 };
+  if (G.over) log(G.over.draw ? '雙方生命牌同時歸 0，平手！' : `${P(G.over.winner).name} 獲勝！${P(opp(G.over.winner)).name} 的生命牌歸 0。`, 'sys');
+  return !!G.over;
+}
+
+// ---- 能量 ----
+const unspent = p => p.consume.filter(e => !e.spent);
+// 從可用來源中找出支付方式；來源依陣列順序優先使用
+function planFrom(src, cost) {
+  const avail = [...src], use = [];
+  for (const col of ['R', 'G', 'B']) {
+    for (let k = 0; k < cost[col]; k++) {
+      let idx = avail.findIndex(a => !a.wild && a.color === col);
+      if (idx < 0) idx = avail.findIndex(a => a.wild);
+      if (idx < 0) return null;
+      use.push(avail.splice(idx, 1)[0]);
+    }
+  }
+  for (let k = 0; k < cost.X; k++) {
+    let idx = avail.findIndex(a => !a.wild);
+    if (idx < 0) idx = 0;
+    if (!avail.length) return null;
+    use.push(avail.splice(idx, 1)[0]);
+  }
+  return use;
+}
+function shortfall(p, cost) {
+  const avail = unspent(p).slice(); const miss = { R: 0, G: 0, B: 0, X: 0 };
+  for (const col of ['R', 'G', 'B']) for (let k = 0; k < cost[col]; k++) {
+    let idx = avail.findIndex(a => !a.wild && a.color === col); if (idx < 0) idx = avail.findIndex(a => a.wild);
+    if (idx < 0) miss[col]++; else avail.splice(idx, 1);
+  }
+  miss.X = Math.max(0, cost.X - avail.length);
+  return ['R', 'G', 'B', 'X'].filter(k => miss[k]).map(k => (k === 'X' ? '任意' : CN[k] + '色') + '能量' + miss[k]).join('、');
+}
+function payFromPool(i, cost) {
+  const plan = planFrom(unspent(P(i)), cost);
+  if (!plan) return false;
+  plan.forEach(e => (e.spent = true));
+  return true;
+}
+
+// ---- 可否召喚 ----
+function canSummon(p, card) { return p.hand.filter(c => c !== card && (c.color === card.color || c.wild)).length >= card.cost; }
+function anySummon(p) { return p.hand.some(c => canSummon(p, c)); }
+
+// ---- 效果可否發動 ----
+function fieldCards() { return G.pl.map(p => p.field).filter(Boolean); }
+function copyOptions() {
+  const out = [];
+  G.pl.forEach((p, pi) => { if (p.field) p.field.fxP.forEach((f, idx) => { if (f.type !== 'inter' && f.total <= 2 && f.supported && !f.ops.some(o => o.op === 'copy')) out.push({ card: p.field, fx: f, idx, pi }); }); });
+  return out;
+}
+// 回傳 '' 代表可發動，否則回傳原因
+function whyNot(i, where, card, idx, win) {
+  const p = P(i), fx = card.fxP[idx];
+  if (G.over) return '對局已結束';
+  if (!fx.supported) return '此效果尚未支援';
+  if (!win || win.who !== i) return '現在不是你的操作時機';
+  if (win.type === 'summon') return '戰鬥階段才能發動';
+  if (where === 'field') {
+    if (p.field !== card) return '不在戰場上';
+    if (card.usedFx.includes(idx)) return '本回合已發動過此效果';
+    if (fx.type === 'magic' && p.flags.sealed) return '戰場角色的魔法效果已被封印';
+  }
+  if (win.type === 'action') {
+    if (fx.type === 'inter') return '干擾效果只能用來回應對手';
+    if (fx.type === 'magic' && p.flags.magic) return '本回合已發動過魔法效果';
+    if (fx.type === 'instant' && p.flags.instant) return '本回合已發動過立即效果';
+    if (fx.type === 'instant' && p.flags.noInstant) return '本回合被禁止使用立即效果';
+  } else if (win.type === 'response') {
+    if (fx.type !== 'inter') return '回應時只能發動干擾效果';
+    if (fx.ops.some(o => o.op === 'negate' && o.magicOnly) && win.target.fx.type !== 'magic') return '只能無效魔法效果';
+  } else return '現在不能發動';
+  if (fx.ops.some(o => o.op === 'copy') && !copyOptions().length) return '場上沒有可複製的效果';
+  if (!planFrom(unspent(p), fx.cost)) return '需要 ' + shortfall(p, fx.cost);
+  return '';
+}
+
+// ---- 選擇（真人或 AI） ----
+const val = c => c.atk * 0.6 + c.cost * 0.5 + c.fxP.length * 0.5;
+async function pick(i, cards, n, title, desc) {
+  n = Math.min(n, cards.length);
+  if (n <= 0) return [];
+  if (P(i).ai) return cards.slice().sort((a, b) => val(a) - val(b)).slice(0, n);
+  return IO.choose({ title, desc, items: cards.map(c => ({ card: c })), min: n, max: n }).then(r => r.map(x => x.card));
+}
+
+// ---- 發動與結算 ----
+async function activate(i, where, card, idx) {
+  const p = P(i), fx = card.fxP[idx];
+  payFromPool(i, fx.cost);
+  if (where === 'hand') { removeFrom(p.hand, card); p.discard.push(card); } else card.usedFx.push(idx);
+  if (fx.type === 'magic') p.flags.magic = true;
+  if (fx.type === 'instant') p.flags.instant = true;
+  log(`${p.name} 從${where === 'hand' ? '手牌' : '戰場'}發動【${card.name}】${TN[fx.type]}效果（${costText(fx.cost)}）：${fx.body}`, i);
+  IO.render();
+  return { owner: i, card, fx, where, negated: false };
+}
+function responseCandidates(o, E) {
+  const p = P(o), out = [];
+  const consider = (where, card) => card.fxP.forEach((f, idx) => {
+    if (f.type !== 'inter' || !f.supported) return;
+    if (where === 'field' && card.usedFx.includes(idx)) return;
+    if (f.ops.some(x => x.op === 'negate' && x.magicOnly) && E.fx.type !== 'magic') return;
+    out.push({ where, card, idx, fx: f });
+  });
+  p.hand.forEach(c => consider('hand', c));
+  if (p.field) consider('field', p.field);
+  return out;
+}
+async function runEffect(E) {
+  const o = opp(E.owner);
+  if (E.fx.interferable) {
+    const prev = G.step;
+    G.step = { type: 'response', who: o, target: E };
+    if (responseCandidates(o, E).length) {
+      const d = P(o).ai ? await aiResponse(o, E) : await IO.ask('response', { target: E });
+      if (d && !G.over) {
+        const I = await activate(o, d.where, d.card, d.idx);
+        await resolve(I, E);
+      } else if (!P(o).ai) log(`${P(o).name} 不干擾`, o);
+    }
+    G.step = prev;
+  }
+  if (G.over) return;
+  if (E.negated) log(`【${E.card.name}】的效果被無效化`, 'sys');
+  else await resolve(E, null);
+  checkOver(); IO.render();
+}
+async function resolve(E, target) {
+  for (const op of E.fx.ops) { if (G.over) return; await doOp(E, op, target); IO.render(); }
+}
+async function payExtra(i, cost) {
+  const p = P(i);
+  if (payFromPool(i, cost)) { log(`${p.name} 用能量池追加支付 ${costText(cost)}`, i); return true; }
+  if (p.ai) {
+    const plan = aiPlan(i, cost, null);
+    if (!plan) return false;
+    plan.cards.forEach(c => toEnergy(i, c)); payFromPool(i, cost);
+    log(`${p.name} 追加支付 ${costText(cost)}`, i); return true;
+  }
+  const r = await IO.choose({
+    title: '對手要求追加費用', desc: `需額外支付 ${costText(cost)}。能量池不夠，請選擇要轉為能量的手牌；放棄則這次效果無效。`,
+    items: p.hand.map(c => ({ card: c })), min: 1, max: p.hand.length, cancelText: '放棄支付',
+    validate: picked => !!planFrom([...unspent(p), ...picked.map(x => ({ color: x.card.color, wild: x.card.wild }))], cost),
+  });
+  if (!r) { log(`${p.name} 放棄追加支付`, i); return false; }
+  r.forEach(x => toEnergy(i, x.card)); payFromPool(i, cost);
+  log(`${p.name} 追加支付 ${costText(cost)}`, i); return true;
+}
+async function doOp(E, op, target) {
+  const i = E.owner, me = P(i), o = opp(i), them = P(o);
+  switch (op.op) {
+    case 'buff': me.flags.mod += op.n; log(`${me.name} 的戰場角色攻擊力 +${op.n}`, i); break;
+    case 'debuff': them.flags.mod -= op.n; log(`${them.name} 的戰場角色攻擊力 -${op.n}`, i); break;
+    case 'reduce': me.flags.reduce += op.n; log(`本回合 ${them.name} 的角色對 ${me.name} 造成的傷害 -${op.n}`, i); break;
+    case 'draw': draw(i, op.n); log(`${me.name} 抽 ${op.n} 張牌`, i); break;
+    case 'drawDiscard': { draw(i, 2); const c = await pick(i, me.hand, 1, '選擇要棄掉的 1 張牌', '抽 2 張後棄 1 張'); c.forEach(x => { removeFrom(me.hand, x); me.discard.push(x); }); log(`${me.name} 抽 2 張，棄掉 1 張`, i); break; }
+    case 'drawReturn': { draw(i, 2); const c = await pick(i, me.hand, 1, '選擇放回牌庫頂的 1 張牌', '抽 2 張後放回 1 張'); c.forEach(x => { removeFrom(me.hand, x); me.deck.push(x); }); log(`${me.name} 抽 2 張，放回 1 張到牌庫頂`, i); break; }
+    case 'heal': heal(i, op.n); break;
+    case 'burn': damage(o, op.n, true); break;
+    case 'burnDiscard': damage(o, op.n, false); break;
+    case 'salvage': if (me.discard.length) { const c = me.discard.splice(Math.floor(Math.random() * me.discard.length), 1)[0]; me.hand.push(c); log(`${me.name} 從棄牌堆隨機取回【${c.name}】`, i); } else log('棄牌堆為空，沒有效果', i); break;
+    case 'randDiscard': { const k = Math.min(op.n, them.hand.length); for (let a = 0; a < k; a++) them.discard.push(them.hand.splice(Math.floor(Math.random() * them.hand.length), 1)[0]); log(`${them.name} 隨機棄掉 ${k} 張手牌`, i); break; }
+    case 'oppMulligan': { const c = await pick(o, them.hand, 1, '選擇 1 張手牌放回牌庫底', '對手效果：放回 1 張，再從牌庫頂抽 1 張'); c.forEach(x => { removeFrom(them.hand, x); them.deck.unshift(x); }); if (c.length) draw(o, 1); log(`${them.name} 將 1 張手牌放回牌庫底並抽 1 張`, i); break; }
+    case 'seal': them.flags.sealed = true; log(`${them.name} 戰場角色的魔法效果本回合被封印`, i); break;
+    case 'wild': { const c = await pick(i, me.hand, 1, '選擇 1 張手牌視為任意顏色', '本回合這張牌當能量時可當任意顏色'); c.forEach(x => (x.wild = true)); if (c[0]) log(`${me.name} 將【${c[0].name}】視為任意顏色`, i); break; }
+    case 'copy': {
+      const opts = copyOptions(); if (!opts.length) { log('沒有可複製的效果', i); break; }
+      let ch;
+      if (me.ai) ch = opts.slice().sort((a, b) => aiFxValue(i, b.fx) - aiFxValue(i, a.fx))[0];
+      else { const r = await IO.choose({ title: '選擇要複製的效果', desc: '場上費用 2 以下的效果，不需另付費用', items: opts.map(x => ({ card: x.card, label: `${TN[x.fx.type]}（${costText(x.fx.cost)}）：${x.fx.body}`, ref: x })), min: 1, max: 1 }); ch = r[0].ref; }
+      log(`${me.name} 複製【${ch.card.name}】的效果：${ch.fx.body}`, i);
+      await resolve({ owner: i, card: E.card, fx: ch.fx, negated: false }, null); break;
+    }
+    // ---- 干擾 ----
+    case 'negate': if (!op.magicOnly || target.fx.type === 'magic') target.negated = true; break;
+    case 'oppDiscard': { const t = target.owner; const c = await pick(t, P(t).hand, 1, '選擇棄掉 1 張手牌', '對手的干擾效果'); c.forEach(x => { removeFrom(P(t).hand, x); P(t).discard.push(x); }); log(`${P(t).name} 棄掉 1 張手牌${c[0] ? '【' + c[0].name + '】' : ''}`, i); break; }
+    case 'discardHandTop': { const t = target.owner, tp = P(t); const c = await pick(t, tp.hand, 1, '選擇棄掉 1 張手牌', '對手的干擾效果：手牌和牌庫頂各棄 1 張'); c.forEach(x => { removeFrom(tp.hand, x); tp.discard.push(x); }); if (tp.deck.length) tp.discard.push(tp.deck.pop()); log(`${tp.name} 從手牌和牌庫頂各棄 1 張`, i); break; }
+    case 'return2draw1': { const t = target.owner, tp = P(t); const c = await pick(t, tp.hand, 2, '選擇 2 張手牌放回牌庫', '對手的干擾效果：放回後洗牌，再抽 1 張'); c.forEach(x => { removeFrom(tp.hand, x); tp.deck.push(x); }); shuffle(tp.deck); draw(t, 1); log(`${tp.name} 將 ${c.length} 張手牌放回牌庫洗勻，再抽 1 張`, i); break; }
+    case 'tax': { const t = target.owner; log(`${P(t).name} 的效果需追加 ${costText(fullCost(op.cost))}`, i); const ok = await payExtra(t, fullCost(op.cost)); if (!ok) target.negated = true; break; }
+    case 'noInstant': them.flags.noInstant = true; log(`${them.name} 本回合無法使用立即效果`, i); break;
+  }
+}
+
+// ---- 回合流程 ----
+async function summonPhase() {
+  G.phase = 'summon'; G.pl.forEach(p => (p.hiddenPick = false));
+  const decide = async i => {
+    G.step = null;
+    let ch;
+    if (P(i).ai) { ch = aiSummon(i); } else ch = await IO.ask('summon', { who: i });
+    P(i).hiddenPick = ch; IO.render(); return ch;
+  };
+  const choices = await Promise.all([decide(0), decide(1)]);
+  G.phase = 'reveal';
+  for (let i = 0; i < 2; i++) await doSummon(i, choices[i]);
+  IO.render(); await IO.sleep(500);
+}
+async function doSummon(i, ch) {
+  const p = P(i);
+  if (ch.forced) return forcedSummon(i);
+  removeFrom(p.hand, ch.unit); ch.pay.forEach(c => { removeFrom(p.hand, c); p.discard.push(c); });
+  ch.unit.usedFx = []; p.field = ch.unit;
+  log(`${p.name} 翻開【${ch.unit.name}】（攻擊力 ${ch.unit.atk}），支付 ${ch.pay.map(c => c.name).join('、')}`, i);
+}
+async function forcedSummon(i) {
+  const p = P(i);
+  const card = p.deck.length ? p.deck.pop() : p.life.pop();
+  if (!card) return;
+  card.usedFx = []; p.field = card;
+  let need = card.cost; const paid = [];
+  while (need > 0 && p.deck.length) { const c = p.deck.pop(); p.discard.push(c); paid.push('牌庫頂'); need--; }
+  if (need > 0 && p.hand.length) {
+    const c = await pick(i, p.hand, need, `無法召喚規則：從手牌棄 ${Math.min(need, p.hand.length)} 張`, '牌庫不足，改從手牌支付不足的能量');
+    c.forEach(x => { removeFrom(p.hand, x); p.discard.push(x); paid.push('手牌'); need--; });
+  }
+  while (need > 0 && p.life.length) { p.discard.push(p.life.pop()); paid.push('生命牌'); need--; }
+  log(`${p.name} 執行【無法召喚規則】：翻開牌庫頂【${card.name}】強制出戰（攻擊力 ${card.atk}），支付 ${paid.join('、') || '無'}`, i);
+}
+async function actionWindow(i) {
+  G.step = { type: 'action', who: i };
+  IO.render();
+  while (!G.over) {
+    const d = P(i).ai ? await aiAction(i) : await IO.ask('action', { who: i });
+    if (!d) break;
+    const E = await activate(i, d.where, d.card, d.idx);
+    await runEffect(E);
+    G.step = { type: 'action', who: i };
+  }
+  if (!G.over) log(`${P(i).name} 結束行動`, i);
+  G.step = null;
+}
+function powers() { return G.pl.map(p => (p.field ? Math.max(0, p.field.atk + p.flags.mod) : 0)); }
+function projected(pw = powers()) {
+  const d = [0, 0];
+  if (pw[0] === pw[1]) { d[0] = 1; d[1] = 1; } else if (pw[0] < pw[1]) d[0] = pw[1] - pw[0]; else d[1] = pw[0] - pw[1];
+  return d.map((x, k) => Math.max(0, x - P(k).flags.reduce));
+}
+async function settle() {
+  G.phase = 'settle';
+  const pw = powers(), d = projected(pw);
+  G.result = { pw, d };
+  log(`戰鬥結算：${P(0).name} ${pw[0]} 對 ${P(1).name} ${pw[1]}${pw[0] === pw[1] ? '，平手' : ''}`, 'sys');
+  d.forEach((n, k) => n && damage(k, n, true));
+  if (!d[0] && !d[1]) log('雙方都沒有受到傷害', 'sys');
+  checkOver(); IO.render();
+}
+async function endPhase() {
+  G.phase = 'end';
+  for (let i = 0; i < 2; i++) {
+    const p = P(i);
+    if (p.hand.length > 7) {
+      const n = p.hand.length - 7;
+      const c = await pick(i, p.hand, n, `手牌超過 7 張：棄掉 ${n} 張`, '回合結束時手牌上限為 7 張');
+      c.forEach(x => { removeFrom(p.hand, x); p.discard.push(x); });
+      log(`${p.name} 手牌超過上限，棄掉 ${n} 張`, i);
+    }
+    if (p.field) p.discard.push(p.field);
+    p.consume.forEach(e => p.discard.push(e.card));
+    p.field = null; p.consume = []; p.flags = freshFlags();
+    p.hand.forEach(c => (c.wild = false));
+  }
+  G.result = null;
+  log('回合結束：戰場和消耗區的牌進入棄牌堆', 'sys');
+}
+async function gameLoop() {
+  while (!G.over) {
+    log(`── 第 ${G.turn} 回合，先攻：${P(G.first).name} ──`, 'turn');
+    if (G.turn > 1) { G.phase = 'draw'; draw(0, 2); draw(1, 2); log('雙方各抽 2 張', 'sys'); IO.render(); if (checkOver()) break; await IO.sleep(300); }
+    await summonPhase(); if (checkOver()) break;
+    G.phase = 'battle';
+    await actionWindow(G.first); if (G.over) break;
+    await actionWindow(opp(G.first)); if (G.over) break;
+    await settle(); if (G.over) break;
+    if (G.pl.some(p => !p.ai)) await IO.ask('next', {}); else await IO.sleep(0);
+    await endPhase();
+    G.first = opp(G.first); G.turn++;
+    if (G.turn > 60) { G.over = { draw: true }; log('超過 60 回合，判定平手', 'sys'); }
+  }
+  G.phase = 'over'; IO.render();
+}
+
+// ===== 電腦 AI =====
+function aiPlan(i, cost, exclude) {
+  const p = P(i);
+  const src = [...unspent(p).map(e => ({ e, color: e.color, wild: e.wild })),
+    ...p.hand.filter(c => c !== exclude).sort((a, b) => val(a) - val(b)).map(c => ({ c, color: c.color, wild: c.wild }))];
+  const use = planFrom(src, cost);
+  if (!use) return null;
+  return { cards: use.filter(u => u.c).map(u => u.c) };
+}
+function aiSummon(i) {
+  const p = P(i);
+  const cands = p.hand.filter(c => canSummon(p, c));
+  if (!cands.length) return { forced: true };
+  cands.sort((a, b) => (b.atk * 1.2 - b.cost * 0.5) - (a.atk * 1.2 - a.cost * 0.5));
+  const unit = cands[0];
+  const pay = p.hand.filter(c => c !== unit && (c.color === unit.color || c.wild)).sort((a, b) => val(a) - val(b)).slice(0, unit.cost);
+  return { unit, pay };
+}
+function dmgWith(i, modMe, modOpp, redMe) {
+  const me = P(i), o = P(opp(i));
+  const pm = me.field ? Math.max(0, me.field.atk + me.flags.mod + modMe) : 0;
+  const po = o.field ? Math.max(0, o.field.atk + o.flags.mod + modOpp) : 0;
+  let dm = 0, dop = 0;
+  if (pm === po) { dm = 1; dop = 1; } else if (pm < po) dm = po - pm; else dop = pm - po;
+  return { me: Math.max(0, dm - me.flags.reduce - redMe), opp: Math.max(0, dop - o.flags.reduce) };
+}
+function aiOpValue(i, op) {
+  const me = P(i), o = P(opp(i)), base = dmgWith(i, 0, 0, 0);
+  switch (op.op) {
+    case 'buff': { const a = dmgWith(i, op.n, 0, 0); return (a.opp - base.opp) + (base.me - a.me) + 0.3 * op.n; }
+    case 'debuff': { const a = dmgWith(i, 0, -op.n, 0); return (a.opp - base.opp) + (base.me - a.me) + 0.3 * op.n; }
+    case 'reduce': return Math.min(op.n, base.me) + 0.15;
+    case 'draw': return 0.8 * op.n;
+    case 'drawDiscard': return 0.7;
+    case 'drawReturn': return 0.5;
+    case 'heal': return 1.1 * Math.min(op.n, me.hpMax - me.life.length, me.discard.length);
+    case 'burn': return 1.2 * Math.min(op.n, o.life.length);
+    case 'burnDiscard': return 1.6 * Math.min(op.n, o.life.length);
+    case 'salvage': return me.discard.length ? 0.7 : 0;
+    case 'randDiscard': return 0.8 * Math.min(op.n, o.hand.length);
+    case 'oppMulligan': return 0.3;
+    case 'seal': return o.field && o.field.fxP.some((f, k) => f.type === 'magic' && !o.field.usedFx.includes(k)) && !o.flags.magic ? 0.9 : 0.05;
+    case 'wild': return 0.05;
+    case 'copy': { const opts = copyOptions(); return opts.length ? Math.max(...opts.map(x => aiFxValue(i, x.fx))) : 0; }
+    default: return 0;
+  }
+}
+function aiFxValue(i, fx) { return fx.ops.reduce((s, op) => s + aiOpValue(i, op), 0); }
+async function aiAction(i) {
+  await IO.sleep(650);
+  const p = P(i), win = { type: 'action', who: i };
+  const w = p.hand.length >= 7 ? 0.3 : 0.6;
+  let best = null;
+  const consider = (where, card) => card.fxP.forEach((fx, idx) => {
+    if (!fx.supported || fx.type === 'inter') return;
+    if (where === 'field' && (card.usedFx.includes(idx) || (fx.type === 'magic' && p.flags.sealed))) return;
+    if (fx.type === 'magic' && p.flags.magic) return;
+    if (fx.type === 'instant' && (p.flags.instant || p.flags.noInstant)) return;
+    if (fx.ops.some(o => o.op === 'copy') && !copyOptions().length) return;
+    const plan = aiPlan(i, fx.cost, where === 'hand' ? card : null);
+    if (!plan) return;
+    const net = aiFxValue(i, fx) - (plan.cards.length + (where === 'hand' ? 1 : 0)) * w;
+    if (net > 0.2 && (!best || net > best.net)) best = { where, card, idx, plan, net };
+  });
+  p.hand.forEach(c => consider('hand', c));
+  if (p.field) consider('field', p.field);
+  if (!best) return null;
+  best.plan.cards.forEach(c => toEnergy(i, c));
+  if (whyNot(i, best.where, best.card, best.idx, win)) return null;
+  return best;
+}
+async function aiResponse(o, E) {
+  await IO.sleep(500);
+  const p = P(o), harm = aiFxValue(E.owner, E.fx), t = P(E.owner);
+  const w = p.hand.length >= 7 ? 0.3 : 0.6;
+  let best = null;
+  for (const c of responseCandidates(o, E)) {
+    const plan = aiPlan(o, c.fx.cost, c.where === 'hand' ? c.card : null);
+    if (!plan) continue;
+    let v = 0;
+    for (const op of c.fx.ops) {
+      if (op.op === 'negate') v += harm;
+      else if (op.op === 'tax') v += planFrom(unspent(t), fullCost(op.cost)) ? 0.1 : (t.hand.length ? harm * 0.4 : harm);
+      else if (op.op === 'oppDiscard') v += 0.6;
+      else if (op.op === 'discardHandTop') v += 1.0;
+      else if (op.op === 'return2draw1') v += 0.6;
+      else if (op.op === 'noInstant') v += 0.2;
+    }
+    const net = v - (plan.cards.length + (c.where === 'hand' ? 1 : 0)) * w;
+    if (net > 0.25 && (!best || net > best.net)) best = { ...c, plan, net };
+  }
+  if (!best) return null;
+  best.plan.cards.forEach(c => toEnergy(o, c));
+  if (whyNot(o, best.where, best.card, best.idx, { type: 'response', who: o, target: E })) return null;
+  return best;
+}
+
+// ===== 牌組 =====
+// 每套牌固定 3 張費用 3。
+// 單色牌組：該色費用 1、2 全放（8+6），加 3 張該色費用 3，共 17 張；不足的 3 張從其他顏色的費用 1 隨機補。
+// 隨機牌組：三色隨意，費用 1／2／3 = 9／8／3。
+const MAX_COST3 = 3;
+function buildDeck(colors) {
+  const all = Object.values(DEFS);
+  if (colors.length === 1) {
+    const col = colors[0];
+    const mine = all.filter(c => c.color === col);
+    const out = [...mine.filter(c => c.cost < 3), ...shuffle(mine.filter(c => c.cost === 3)).slice(0, MAX_COST3)];
+    const extra = shuffle(all.filter(c => c.color !== col && c.cost === 1));
+    while (out.length < 20 && extra.length) out.push(extra.pop());
+    return out.map(c => c.id);
+  }
+  const out = [];
+  for (const [cost, n] of [[1, 9], [2, 8], [3, MAX_COST3]]) out.push(...shuffle(all.filter(c => colors.includes(c.color) && c.cost === cost)).slice(0, n));
+  return out.map(c => c.id);
+}
+if (typeof module !== 'undefined') module.exports = { IO, loadData, newGame, gameLoop, buildDeck, get G() { return G; }, get LEADERS() { return LEADERS; }, DEFS: () => DEFS, parseFx };
+
+</script>
+<script>
+// ===== 畫面 =====
+loadData(DATA);
+const $ = id => document.getElementById(id);
+const RACE_GLYPH = { 人: '人', 妖: '妖', 幻: '幻' };
+let pend = null, modal = null, sel = null, showOppHand = false, setup = null, gameId = 0;
+const PRESETS = [
+  { key: 'R', name: '紅色牌組', sub: '進攻・攻擊力修正', colors: ['R'] },
+  { key: 'G', name: '綠色牌組', sub: '防守・回復・棄牌', colors: ['G'] },
+  { key: 'B', name: '藍色牌組', sub: '抽牌・反制', colors: ['B'] },
+  { key: 'RGB', name: '隨機牌組', sub: '三色隨意配置', colors: ['R', 'G', 'B'] },
+];
+function loadCustom() { try { const d = JSON.parse(localStorage.getItem('deck-v102') || 'null'); return Array.isArray(d) && d.length === 20 && d.every(id => DEFS[id]) && d.filter(id => DEFS[id].cost === 3).length <= MAX_COST3 ? d : null; } catch (e) { return null; } }
+function saveCustom(ids) { try { localStorage.setItem('deck-v102', JSON.stringify(ids)); } catch (e) {} }
+
+IO.sleep = ms => { const id = gameId; return new Promise(r => setTimeout(() => { if (id === gameId) r(); }, ms)); };
+IO.render = () => render();
+IO.onLog = () => {};
+IO.ask = (kind, ctx) => new Promise(res => { const id = gameId; pend = { kind, ctx, res, id }; if (kind === 'summon') sel = null; render(); });
+IO.choose = opts => new Promise(res => { modal = { type: 'choose', ...opts, picked: opts.pre ? opts.pre.slice() : [], res }; render(); });
+function answer(v) { const p = pend; pend = null; sel = null; p.res(v); render(); }
+
+// ---- 小元件 ----
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function costHTML(c) {
+  const parts = ['R', 'G', 'B', 'X'].filter(k => c[k]);
+  if (!parts.length) return '免費';
+  return parts.map(k => `<span class="pip"><i class="dot ${k}"></i>${CN[k]}${c[k]}</span>`).join(' + ');
+}
+function cardHTML(c, o = {}) {
+  if (!c) return '';
+  const cls = ['card', 'c' + c.color, o.size || '', o.click ? 'click' : '', o.sel ? 'sel' : '', o.dim ? 'dim' : ''].join(' ');
+  const atkCls = o.mod > 0 ? 'up' : o.mod < 0 ? 'down' : '';
+  const atk = o.mod !== undefined ? Math.max(0, c.atk + o.mod) : c.atk;
+  return `<div class="${cls}" ${o.attrs || ''} title="${esc(c.id + ' ' + c.name)}">
+    ${o.flag ? `<span class="flag">${o.flag}</span>` : ''}
+    <div class="c-top"><span class="c-cost">${c.cost}</span><span class="c-name">${esc(c.name)}</span></div>
+    <div class="c-art"><span>${RACE_GLYPH[c.race] || ''}</span>${c.wild ? '<em class="c-wild">任意色</em>' : ''}</div>
+    <div class="c-fx">${c.fxP.map((f, k) => `<div class="fxl" ${c.usedFx && c.usedFx.includes(k) ? 'style="opacity:.45"' : ''}><b class="tag ${f.type}">${TN[f.type]}</b><span>${costText(f.cost)}：${esc(f.body)}</span></div>`).join('')}</div>
+    <div class="c-bot"><span class="c-atk ${atkCls}">${atk}</span><span class="c-id">${c.id}</span><span class="c-race">${c.race}</span></div>
+  </div>`;
+}
+const backHTML = (size, attrs = '') => `<div class="card back ${size || ''}" style="background-image:url(${BACK})" ${attrs}></div>`;
+function tapHTML(e) { return `<div class="tap ${e.wild ? 'cW' : 'c' + e.color} ${e.spent ? 'spent' : ''}" title="${esc(e.card.name)}"><b>${esc(e.card.name)}</b><span>${e.wild ? '任意色' : CN[e.color] + '色'}能量</span></div>`; }
+function poolText(p) {
+  const u = unspent(p); if (!p.consume.length) return '';
+  const cnt = { R: 0, G: 0, B: 0, W: 0 }; u.forEach(e => cnt[e.wild ? 'W' : e.color]++);
+  const s = Object.entries(cnt).filter(([, n]) => n).map(([k, n]) => `<span class="pip"><i class="dot ${k}"></i>${n}</span>`).join(' ');
+  return u.length ? `可用 ${s}` : '能量已用完';
+}
+
+// ---- 主繪製 ----
+function render() {
+  if (!G) { renderModal(); return; }
+  const me = P(0), op = P(1);
+  const phaseName = { setup: '準備', draw: '抽牌', summon: '召喚', reveal: '翻開', battle: '戰鬥', settle: '結算', end: '回合結束', over: '對局結束' }[G.phase] || '';
+  $('turnline').innerHTML = `第<b>${G.turn}</b>回合 · ${phaseName} · 先攻 <b style="font-family:var(--f-body);font-size:13px">${P(G.first).name}</b>`;
+  // 敵方手牌
+  $('oppHandN').textContent = op.hand.length + ' 張';
+  $('oppHand').innerHTML = op.hand.map(c => showOppHand ? cardHTML(c, { size: 's' }) : backHTML('xs')).join('') || '<span class="empty">沒有手牌</span>';
+  // 戰場
+  const fieldView = (i) => {
+    const p = P(i);
+    if (G.phase === 'summon') {
+      if (p.hiddenPick) {
+        if (i === 0 && !p.hiddenPick.forced) return `<div style="position:relative">${cardHTML(p.hiddenPick.unit, { size: 'l', dim: true, flag: '已蓋牌' })}</div>`;
+        return `<div style="position:relative">${backHTML('l')}<span class="flag">${i === 0 ? '將執行無法召喚規則' : '已蓋牌'}</span></div>`;
+      }
+      return `<span class="empty">${i === 0 ? '選擇出戰角色' : '對手選擇中…'}</span>`;
+    }
+    if (!p.field) return '<span class="empty">—</span>';
+    const mod = p.flags.mod;
+    const isSel = sel && sel.uid === p.field.uid;
+    return `<div style="position:relative">${cardHTML(p.field, { size: 'l', mod, click: true, sel: isSel, attrs: `data-act="sel" data-where="${i === 0 ? 'field' : 'oppfield'}" data-uid="${p.field.uid}" tabindex="0"` })}${mod ? `<span class="modbadge">${mod > 0 ? '+' : ''}${mod}</span>` : ''}</div>`;
+  };
+  $('oppField').innerHTML = fieldView(1);
+  $('meField').innerHTML = fieldView(0);
+  $('oppConsume').innerHTML = op.consume.map(tapHTML).join('') || '<span class="empty">—</span>';
+  $('meConsume').innerHTML = me.consume.map(tapHTML).join('') || '<span class="empty">把手牌轉為能量後會橫置在這裡</span>';
+  $('oppPool').innerHTML = poolText(op);
+  $('mePool').innerHTML = poolText(me);
+  // 我方手牌
+  $('meHandN').textContent = me.hand.length + ' 張' + (me.hand.length > 7 ? '（回合結束須棄到 7 張）' : '');
+  const pickedUid = me.hiddenPick && !me.hiddenPick.forced && G.phase === 'summon' ? me.hiddenPick.unit.uid : null;
+  const payUids = pickedUid ? me.hiddenPick.pay.map(c => c.uid) : [];
+  $('meHand').innerHTML = me.hand.map(c => cardHTML(c, { click: true, sel: sel && sel.uid === c.uid, dim: c.uid === pickedUid || payUids.includes(c.uid), attrs: `data-act="sel" data-where="hand" data-uid="${c.uid}" tabindex="0"` })).join('') || '<span class="empty">沒有手牌</span>';
+  renderAxis(); renderInspector(); renderInfo(); renderLog(); renderModal();
+}
+
+function renderAxis() {
+  const steps = [['draw', '抽牌'], ['summon', '召喚'], ['reveal', '翻開'], ['a1', '先攻行動'], ['a2', '後攻行動'], ['settle', '結算']];
+  let cur = G.phase;
+  if (G.phase === 'battle') cur = G.step && G.step.who === G.first ? 'a1' : G.step && G.step.type === 'response' && G.step.target.owner === G.first ? 'a1' : 'a2';
+  if (G.phase === 'end') cur = 'settle';
+  const idx = steps.findIndex(s => s[0] === cur);
+  const stepHTML = steps.map((s, k) => `<span class="step ${k === idx ? 'on' : k < idx ? 'done' : ''}">${s[1]}</span>`).join('');
+  const showPw = G.pl.every(p => p.field) && ['battle', 'settle', 'end', 'over', 'reveal'].includes(G.phase);
+  const pw = showPw ? (G.result ? G.result.pw : powers()) : null;
+  const d = showPw ? (G.result ? G.result.d : projected()) : null;
+  const pwBox = (i, label) => {
+    if (!pw) return `<div class="pw"><div class="n" style="color:var(--rule2)">–</div><div class="who">${label}</div></div>`;
+    const cls = pw[i] > pw[1 - i] ? 'win' : pw[i] < pw[1 - i] ? 'lose' : '';
+    const mod = P(i).flags.mod, red = P(i).flags.reduce;
+    return `<div class="pw ${cls}"><div class="n">${pw[i]}</div><div class="who">${label}</div><div class="mod">${mod ? `攻擊力${mod > 0 ? '+' : ''}${mod}` : '&nbsp;'}${red ? ` · 減傷${red}` : ''}</div></div>`;
+  };
+  const dmgLine = d ? `<div style="font-family:var(--f-body);font-size:11.5px;color:var(--mute);text-align:center">${G.result ? '本回合' : '預估'}：你受 ${d[0]}・對手受 ${d[1]}</div>` : '';
+  $('axis').innerHTML = `
+    <div><div class="steps">${stepHTML}</div><div class="firstline">本回合先攻：<b>${P(G.first).name}</b>　後攻：${P(opp(G.first)).name}</div></div>
+    <div><div class="duel">${pwBox(0, '你')}<span class="vs">VS</span>${pwBox(1, '對手')}</div>${dmgLine}</div>
+    <div class="prompt">${promptHTML()}</div>`;
+}
+function promptHTML() {
+  if (G.over) {
+    const t = G.over.draw ? '平手' : G.over.winner === 0 ? '你獲勝了' : '對手獲勝';
+    return `<div class="tt">${t}</div><div>${G.over.draw ? '雙方生命牌同時歸 0。' : '對方的生命牌歸 0。'}</div><div class="acts"><button class="btn primary" data-act="newgame">再來一局</button></div>`;
+  }
+  if (!pend) {
+    if (G.step && G.step.who === 1) return `<div class="tt">對手${G.step.type === 'response' ? '考慮是否干擾' : '行動中'}…</div>`;
+    if (G.phase === 'summon') return `<div class="tt">等待對手蓋牌…</div>`;
+    return `<div class="tt">${{ reveal: '同時翻開', draw: '抽牌', settle: '結算中', end: '回合結束' }[G.phase] || '處理中'}</div>`;
+  }
+  const me = P(0);
+  if (pend.kind === 'summon') {
+    if (!anySummon(me)) return `<div class="tt">召喚階段</div><div>手牌中沒有付得起費用的角色。</div><div class="acts"><button class="btn primary" data-act="forced">執行【無法召喚規則】</button></div>`;
+    return `<div class="tt">召喚階段</div><div>點一張手牌，在右方操作面板選「蓋牌出戰」。召喚費用要用與角色同色的手牌支付，付完進入棄牌堆。</div>`;
+  }
+  if (pend.kind === 'action') {
+    const f = me.flags;
+    return `<div class="tt">你的行動（${G.first === 0 ? '先攻' : '後攻'}）</div>
+      <div>魔法 ${f.magic ? '已用' : '可用 1 次'}・立即 ${f.instant ? '已用' : f.noInstant ? '被禁止' : '可用 1 次'}。先把手牌轉為能量，再按效果的「發動」。</div>
+      <div class="acts"><button class="btn primary" data-act="end">結束行動</button></div>`;
+  }
+  if (pend.kind === 'response') {
+    const E = pend.ctx.target;
+    return `<div class="tt">對手發動了效果</div>
+      <div class="target-fx"><b class="tag ${E.fx.type}">${TN[E.fx.type]}</b> 【${esc(E.card.name)}】${esc(E.fx.body)}</div>
+      <div style="margin-top:4px">你可以發動 1 次干擾效果回應，干擾後對手不能再回應。</div>
+      <div class="acts"><button class="btn primary" data-act="end">不干擾</button></div>`;
+  }
+  if (pend.kind === 'next') {
+    const r = G.result;
+    const txt = r.pw[0] === r.pw[1] ? '戰鬥力相同，平手' : r.pw[0] > r.pw[1] ? `你贏了這場戰鬥，差值 ${r.pw[0] - r.pw[1]}` : `你輸了這場戰鬥，差值 ${r.pw[1] - r.pw[0]}`;
+    return `<div class="tt">戰鬥結算</div><div>${txt}。你受到 ${r.d[0]} 點、對手受到 ${r.d[1]} 點傷害，扣除的生命牌加入手牌。</div><div class="acts"><button class="btn primary" data-act="next">回合結束</button></div>`;
+  }
+  return '';
+}
+
+function findCard(uid) {
+  uid = +uid;
+  const me = P(0), op = P(1);
+  let c = me.hand.find(x => x.uid === uid); if (c) return { card: c, where: 'hand' };
+  if (me.field && me.field.uid === uid) return { card: me.field, where: 'field' };
+  if (op.field && op.field.uid === uid) return { card: op.field, where: 'oppfield' };
+  return null;
+}
+function renderInspector() {
+  const box = $('inspector');
+  const f = sel && findCard(sel.uid);
+  if (!f) {
+    box.innerHTML = `<h3>操作面板</h3><div class="hint">點選手牌或戰場上的角色，這裡會顯示卡牌詳情和可以進行的操作：蓋牌出戰、轉為能量、發動效果。</div>
+      <div class="hint">按鈕會標示「可發動」，或說明還缺什麼，例如「需要 藍色能量1」。</div>`;
+    return;
+  }
+  const { card, where } = f, me = P(0);
+  const whereTxt = { hand: '我方手牌', field: '我方戰場', oppfield: '敵方戰場' }[where];
+  let acts = '';
+  const canWin = pend && (pend.kind === 'action' || pend.kind === 'response');
+  if (where === 'hand' && pend && pend.kind === 'summon') {
+    const ok = canSummon(me, card);
+    acts += `<div class="act"><div class="go"><span class="state ${ok ? 'ok' : 'no'}">${ok ? `支付 ${card.cost} 張${CN[card.color]}色手牌` : `同色手牌不足：需要 ${card.cost} 張${CN[card.color]}色`}</span><button data-act="summon" data-uid="${card.uid}" ${ok ? '' : 'disabled'}>蓋牌出戰</button></div></div>`;
+  }
+  if (where === 'hand') {
+    acts += `<div class="act"><div class="go"><span class="state ${canWin ? 'ok' : ''}">${canWin ? `轉為${card.wild ? '任意' : CN[card.color]}色能量，橫置到消耗區` : '戰鬥階段輪到你時才能轉為能量'}</span><button data-act="energy" data-uid="${card.uid}" ${canWin ? '' : 'disabled'}>轉為能量</button></div></div>`;
+  }
+  card.fxP.forEach((fx, idx) => {
+    let why = where === 'oppfield' ? '對手的卡' : whyNot(0, where, card, idx, G.step);
+    if (where === 'field' && card.usedFx.includes(idx)) why = '本回合已發動過此效果';
+    const ok = !why;
+    acts += `<div class="act"><div class="line"><b class="tag ${fx.type}">${TN[fx.type]}</b><span>${costHTML(fx.cost)}：${esc(fx.body)}${fx.type === 'instant' ? `<span class="hint">（${fx.interferable ? '可被干擾' : '不可被干擾'}）</span>` : ''}</span></div>
+      <div class="go"><span class="state ${ok ? 'ok' : 'no'}">${ok ? '可發動' : '無法發動：' + why}</span>${where === 'oppfield' ? '' : `<button data-act="fx" data-uid="${card.uid}" data-where="${where}" data-idx="${idx}" ${ok ? '' : 'disabled'}>發動</button>`}</div></div>`;
+  });
+  box.innerHTML = `<div class="insp-top">${cardHTML(card, { size: 's' })}<div class="insp-meta"><h3>${esc(card.name)}</h3><span>${whereTxt}</span><span>編號 <b>${card.id}</b>・${card.race}</span><span>召喚 <b>${CN[card.color]} ${card.cost}</b>・攻擊力 <b>${card.atk}</b></span>${where === 'hand' ? '<span>從手牌發動效果只能擇一，用完進棄牌堆</span>' : ''}${where === 'field' ? '<span>戰場角色的效果都可發動，能量從手牌支付</span>' : ''}</div></div>${acts}`;
+}
+function infoHTML(i) {
+  const p = P(i), f = p.flags;
+  const life = Array.from({ length: p.hpMax }, (_, k) => `<i class="${k < p.life.length ? 'on' : ''}"></i>`).join('');
+  const chips = [];
+  chips.push(`<span class="chip ${f.magic ? 'used' : ''}">魔法 ${f.magic ? '已用' : '未用'}</span>`);
+  chips.push(`<span class="chip ${f.instant ? 'used' : ''}">立即 ${f.instant ? '已用' : '未用'}</span>`);
+  if (f.noInstant) chips.push('<span class="chip warn">禁止立即</span>');
+  if (f.sealed) chips.push('<span class="chip warn">戰場魔法封印</span>');
+  if (f.mod) chips.push(`<span class="chip ${f.mod > 0 ? 'good' : 'warn'}">攻擊力${f.mod > 0 ? '+' : ''}${f.mod}</span>`);
+  if (f.reduce) chips.push(`<span class="chip good">受傷-${f.reduce}</span>`);
+  return `<h4>${i === 0 ? '我方' : '敵方'}・${esc(p.name)}<small>主角 ${esc(p.leader.name)}（${p.leader.race}）</small></h4>
+    <div class="stats">
+      <div class="stat life"><div class="n">${p.life.length}</div><div class="k">生命牌</div></div>
+      <div class="stat"><div class="n">${p.deck.length}</div><div class="k">牌庫</div></div>
+      <div class="stat"><button data-act="viewdiscard" data-p="${i}" title="查看棄牌堆"><div class="n">${p.discard.length}</div><div class="k">棄牌堆 ▸</div></button></div>
+      <div class="stat"><div class="n">${p.hand.length}</div><div class="k">手牌</div></div>
+    </div>
+    <div class="lifebar">${life}</div>
+    <div class="statusline">${chips.join('')}</div>`;
+}
+function renderInfo() { $('infoOpp').innerHTML = infoHTML(1); $('infoMe').innerHTML = infoHTML(0); }
+let lastLogLen = -1;
+function renderLog() {
+  if (G.log.length === lastLogLen) return; lastLogLen = G.log.length;
+  const el = $('log');
+  el.innerHTML = G.log.map(l => `<div class="w${l.who}"><span class="t">T${l.t}</span><span>${esc(l.text)}</span></div>`).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+// ---- 對話框 ----
+function renderModal() {
+  const m = $('modal');
+  if (!modal) { m.innerHTML = ''; return; }
+  if (modal.type === 'choose') {
+    const ok = modal.picked.length >= modal.min && modal.picked.length <= modal.max && (!modal.validate || modal.validate(modal.picked.map(k => modal.items[k])));
+    m.innerHTML = `<div class="veil"><div class="dlg" role="dialog" aria-modal="true">
+      <h2>${esc(modal.title)}</h2><p class="d">${esc(modal.desc || '')}</p>
+      <div class="pickgrid">${modal.items.map((it, k) => `<button class="pickitem ${modal.picked.includes(k) ? 'on' : ''}" data-act="pick" data-k="${k}" style="background:none;border:0;padding:0">${cardHTML(it.card, { size: 's' })}${it.label ? `<span class="lbl">${esc(it.label)}</span>` : ''}</button>`).join('')}</div>
+      <div class="row"><span class="sp">已選 ${modal.picked.length}／${modal.min === modal.max ? modal.min : `${modal.min}～${modal.max}`}</span>
+      ${modal.cancelText ? `<button class="btn" data-act="pickcancel">${esc(modal.cancelText)}</button>` : ''}
+      <button class="btn primary" data-act="pickok" ${ok ? '' : 'disabled'}>確定</button></div></div></div>`;
+  } else if (modal.type === 'view') {
+    m.innerHTML = `<div class="veil" data-act="close"><div class="dlg" role="dialog"><h2>${esc(modal.title)}</h2><p class="d">${modal.cards.length ? '由舊到新排列，最右邊是棄牌堆頂。' : '目前是空的。'}</p>
+      <div class="pickgrid">${modal.cards.map(c => cardHTML(c, { size: 's' })).join('')}</div><div class="row"><button class="btn primary" data-act="close">關閉</button></div></div></div>`;
+  } else if (modal.type === 'setup') m.innerHTML = setupHTML();
+  else if (modal.type === 'builder') m.innerHTML = builderHTML();
+  else if (modal.type === 'rules') m.innerHTML = rulesHTML();
+}
+
+// ---- 開局設定 ----
+function setupHTML() {
+  const s = modal, custom = loadCustom();
+  const deckOpts = PRESETS.map(p => `<button class="opt ${s.deck === p.key ? 'on' : ''}" data-act="setdeck" data-k="${p.key}"><b>${p.name}</b><small>${p.sub}</small></button>`).join('')
+    + `<button class="opt ${s.deck === 'custom' ? 'on' : ''}" data-act="setdeck" data-k="custom" ${custom ? '' : 'disabled style="opacity:.45"'}><b>我的牌組</b><small>${custom ? '20 張已儲存' : '先到「自組牌組」建立'}</small></button>`;
+  const lead = LEADERS.map((l, k) => `<button class="opt ${s.leader === k ? 'on' : ''}" data-act="setleader" data-k="${k}"><b>${esc(l.name)}</b><small>${l.race}・生命 ${l.hp}・能力：暫無</small></button>`).join('');
+  const hands = ['剪刀', '石頭', '布'];
+  return `<div class="veil"><div class="dlg" role="dialog" aria-modal="true">
+    <h2>新對局：對戰電腦</h2><p class="d">選好主角和牌組後猜拳，贏的人第 1 回合先攻，之後每回合交換。</p>
+    <div class="sec">主角</div><div class="opts">${lead}</div>
+    <div class="sec">你的牌組（20 張，費用 3 的角色固定 3 張）</div><div class="opts">${deckOpts}</div>
+    <div class="sec">猜拳決定先攻</div>
+    <div class="rps">${hands.map((h, k) => `<button data-act="rps" data-k="${k}">${h}</button>`).join('')}</div>
+    <div class="rpsres">${s.rps || ''}</div>
+    <div class="row"><span class="sp">單色牌組 17 張同色，另外 3 張從其他顏色的費用 1 隨機補。電腦隨機使用其中一種牌組</span>${G && !G.over ? '<button class="btn" data-act="close">取消</button>' : ''}<button class="btn primary" data-act="start" ${s.first === undefined ? 'disabled' : ''}>開始對戰</button></div>
+  </div></div>`;
+}
+function startGame() {
+  const s = modal;
+  const myDeck = s.deck === 'custom' ? loadCustom() : buildDeck(PRESETS.find(p => p.key === s.deck).colors);
+  const aiPreset = PRESETS[Math.floor(Math.random() * PRESETS.length)];
+  const aiLeader = Math.floor(Math.random() * LEADERS.length);
+  modal = null; sel = null; pend = null; lastLogLen = -1; gameId++;
+  const myId = gameId;
+  newGame({ names: ['你', '電腦'], leaders: [LEADERS[s.leader], LEADERS[aiLeader]], decks: [myDeck, buildDeck(aiPreset.colors)], ai: [false, true], first: s.first });
+  log(`電腦使用「${aiPreset.name}」牌組`, 'sys');
+  render();
+  gameLoop().catch(e => { if (myId === gameId) { log('程式錯誤：' + e.message, 'sys'); render(); console.error(e); } });
+}
+
+// ---- 自組牌組 ----
+function builderHTML() {
+  const picked = modal.picked;
+  const byCol = ['R', 'G', 'B'].map(col => Object.values(DEFS).filter(c => c.color === col));
+  const cnt = [1, 2, 3].map(k => picked.filter(id => DEFS[id].cost === k).length);
+  return `<div class="veil"><div class="dlg" role="dialog" aria-modal="true" style="max-width:1100px">
+    <h2>自組牌組</h2><p class="d">點選卡牌加入或移出，固定 20 張，同編號不能重複，費用 3 的角色最多 3 張。</p>
+    ${byCol.map((list, k) => `<div class="sec">${CN[['R', 'G', 'B'][k]]}色</div><div class="builder">${list.map(c => `<button class="brow ${picked.includes(c.id) ? 'on' : ''}" data-act="btoggle" data-id="${c.id}">
+      <span class="bcost" style="background:var(--${c.color})">${c.cost}</span><span><span class="bname">${esc(c.name)}</span> <span class="hint">${c.id}・${c.race}・攻 ${c.atk}</span><br><span class="bfx">${c.fxP.map(f => `${TN[f.type]}/${costText(f.cost)}：${esc(f.body)}`).join('<br>')}</span></span></button>`).join('')}</div>`).join('')}
+    <div class="row" style="position:sticky;bottom:-18px;background:var(--slab);padding:10px 0"><span class="sp">已選 <b style="color:var(--fg)">${picked.length}</b>／20・費用1：${cnt[0]}・費用2：${cnt[1]}・費用3：${cnt[2]}／${MAX_COST3}</span>
+      <button class="btn" data-act="bclear">清空</button><button class="btn" data-act="bfill">隨機補滿</button><button class="btn" data-act="close">取消</button>
+      <button class="btn primary" data-act="bsave" ${picked.length === 20 ? '' : 'disabled'}>儲存牌組</button></div>
+  </div></div>`;
+}
+function rulesHTML() {
+  return `<div class="veil" data-act="close"><div class="dlg" role="dialog" style="max-width:1000px"><h2>規則 v1.0.2（遊戲實作版本）</h2><p class="d">下面是程式實際依照的規則，<span class="note">標金色</span>的是規則沒寫明、目前先這樣做的地方。</p>
+  <div class="rules">
+    <h3>準備</h3><ul><li>牌組 20 張，同編號不重複。主角不計入牌組，生命 6。</li><li>洗牌後抽 6 張為生命牌堆，再抽 5 張為起始手牌。</li><li>猜拳贏的人第 1 回合先攻，之後每回合交換。</li></ul>
+    <h3>回合開始</h3><ul><li>雙方各抽 2 張，第 1 回合不抽。牌庫空了就從生命牌堆抽。</li></ul>
+    <h3>召喚</h3><ul><li>雙方同時蓋 1 張角色，同時翻開。每回合一定要召喚。</li><li>召喚費用用與角色同色的手牌支付，付完進入棄牌堆。</li><li>手牌付不出任何角色時執行【無法召喚規則】：翻開牌庫頂強制出戰，費用依序由牌庫頂、手牌、生命牌支付。</li></ul>
+    <h3>能量與消耗區</h3><ul><li>發動效果的能量一律從手牌支付：先把手牌「轉為能量」，橫置在消耗區，再按「發動」。</li><li>費用中的「灰」可用任意顏色支付。</li><li>回合結束時，消耗區和戰場的牌都進入棄牌堆。</li><li class="note">轉成能量但沒用完的牌，同樣在回合結束時進入棄牌堆。</li></ul>
+    <h3>效果</h3><ul><li>從手牌發動：只能擇一效果，發動後該卡進入棄牌堆。</li><li>從戰場角色發動：兩個效果都可發動，各一次。</li><li>每回合每人：魔法效果 1 次、立即效果 1 次。</li><li>干擾只能回應對手的魔法或立即效果；每個效果最多被干擾 1 次，干擾不能被回應，效果不能連鎖。</li><li class="note">立即效果卡面寫「可被干擾」才能被干擾，沒寫的視為不可被干擾。</li><li class="note">立即效果目前只能在自己的行動步驟發動。</li></ul>
+    <h3>戰鬥</h3><ul><li>先攻行動 → 後攻干擾 → 後攻行動 → 先攻干擾 → 結算。</li><li>最終戰鬥力 = 攻擊力 + 修正，最低 0。輸的一方扣差值張生命牌，平手各扣 1 張，扣掉的加入手牌。</li><li>「敵方單位傷害-N」：本回合自己受到的戰鬥傷害減少 N。</li></ul>
+    <h3>回合結束與勝負</h3><ul><li>手牌超過 7 張要棄到 7 張。</li><li>生命牌歸 0 敗北，雙方同時歸 0 平手。</li></ul>
+    <h3>特定效果</h3><ul><li>回復：棄牌堆頂的牌移回生命牌堆，不超過主角生命上限。</li><li>R15 直接傷害：生命牌移到棄牌堆。B11：生命牌照常加入手牌。</li><li>抽 2 放回 1：放回牌庫頂。B06：對手選 1 張放回牌庫底，再抽牌庫頂。</li><li>複製：場上費用 2 以下的魔法或立即效果，不另付費。</li><li>B18 禁止魔法：封印對手戰場角色的魔法效果，限本回合。</li><li>追加費用的干擾：付不出來，被干擾的效果就無效。</li></ul>
+  </div><div class="row"><button class="btn primary" data-act="close">關閉</button></div></div></div>`;
+}
+
+// ---- 事件 ----
+document.addEventListener('click', async ev => {
+  const t = ev.target.closest('[data-act]'); if (!t) return;
+  const a = t.dataset.act;
+  if (a === 'close') { if (t.classList.contains('veil') && ev.target !== t) return; modal = null; render(); return; }
+  if (a === 'dbg') { showOppHand = t.checked; render(); return; }
+  if (a === 'copylog') {
+    const txt = G ? G.log.map(l => `[T${l.t}] ${l.text}`).join('\n') : '';
+    try { await navigator.clipboard.writeText(txt); t.textContent = '已複製'; } catch (e) { const r = document.createRange(); r.selectNodeContents($('log')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); t.textContent = '已選取，請按複製'; }
+    setTimeout(() => (t.textContent = '複製紀錄'), 1600); return;
+  }
+  if (a === 'rules') { modal = { type: 'rules' }; render(); return; }
+  if (a === 'newgame') { modal = { type: 'setup', leader: 0, deck: loadCustom() ? 'custom' : 'R' }; render(); return; }
+  if (a === 'builder') { modal = { type: 'builder', picked: (loadCustom() || []).slice() }; render(); return; }
+  if (a === 'setdeck') { modal.deck = t.dataset.k; render(); return; }
+  if (a === 'setleader') { modal.leader = +t.dataset.k; render(); return; }
+  if (a === 'rps') {
+    const hands = ['剪刀', '石頭', '布'], me = +t.dataset.k, ai = Math.floor(Math.random() * 3);
+    const res = (me - ai + 3) % 3; // 1 = 我贏
+    if (res === 0) { modal.rps = `你出${hands[me]}，電腦也出${hands[ai]}。平手，再猜一次。`; modal.first = undefined; }
+    else { modal.first = res === 1 ? 0 : 1; modal.rps = `你出${hands[me]}，電腦出${hands[ai]}：${res === 1 ? '你' : '電腦'}第 1 回合先攻。`; }
+    render(); return;
+  }
+  if (a === 'start') { startGame(); return; }
+  if (a === 'btoggle') { const id = t.dataset.id, p = modal.picked; const k = p.indexOf(id); if (k >= 0) p.splice(k, 1); else if (p.length < 20 && !(DEFS[id].cost === 3 && p.filter(x => DEFS[x].cost === 3).length >= MAX_COST3)) p.push(id); render(); return; }
+  if (a === 'bclear') { modal.picked = []; render(); return; }
+  if (a === 'bfill') { const rest = shuffle(Object.keys(DEFS).filter(id => !modal.picked.includes(id))); while (modal.picked.length < 20 && rest.length) { const id = rest.pop(); if (DEFS[id].cost === 3 && modal.picked.filter(x => DEFS[x].cost === 3).length >= MAX_COST3) continue; modal.picked.push(id); } render(); return; }
+  if (a === 'bsave') { saveCustom(modal.picked); modal = { type: 'setup', leader: 0, deck: 'custom' }; render(); return; }
+  if (a === 'viewdiscard') { const p = P(+t.dataset.p); modal = { type: 'view', title: `${p.name}的棄牌堆（${p.discard.length} 張）`, cards: p.discard.slice() }; render(); return; }
+  if (a === 'pick') {
+    const k = +t.dataset.k, p = modal.picked, i = p.indexOf(k);
+    if (i >= 0) p.splice(i, 1); else { if (modal.max === 1) p.length = 0; if (p.length < modal.max) p.push(k); }
+    render(); return;
+  }
+  if (a === 'pickok') { const m = modal; modal = null; m.res(m.picked.map(k => m.items[k])); render(); return; }
+  if (a === 'pickcancel') { const m = modal; modal = null; m.res(null); render(); return; }
+  if (!G || G.over) return;
+  if (a === 'sel') { sel = { uid: +t.dataset.uid }; render(); return; }
+  if (!pend) return;
+  if (a === 'end' && (pend.kind === 'action' || pend.kind === 'response')) { answer(null); return; }
+  if (a === 'next' && pend.kind === 'next') { answer(true); return; }
+  if (a === 'forced' && pend.kind === 'summon') { answer({ forced: true }); return; }
+  if (a === 'energy' && (pend.kind === 'action' || pend.kind === 'response')) { const f = findCard(t.dataset.uid); if (f && f.where === 'hand') { toEnergy(0, f.card); sel = null; render(); } return; }
+  if (a === 'summon' && pend.kind === 'summon') {
+    const f = findCard(t.dataset.uid); if (!f) return; const unit = f.card, me = P(0);
+    const match = me.hand.filter(c => c !== unit && (c.color === unit.color || c.wild));
+    const pre = match.map((c, k) => k).sort((x, y) => val(match[x]) - val(match[y])).slice(0, unit.cost);
+    const r = await IO.choose({ title: `支付【${unit.name}】的召喚費用`, desc: `選 ${unit.cost} 張${CN[unit.color]}色手牌，翻開時進入棄牌堆。已先幫你選價值最低的牌，可以點選更換。`, items: match.map(c => ({ card: c })), min: unit.cost, max: unit.cost, pre, cancelText: '取消' });
+    if (r && pend && pend.kind === 'summon') answer({ unit, pay: r.map(x => x.card) });
+    return;
+  }
+  if (a === 'fx') {
+    const f = findCard(t.dataset.uid); if (!f) return;
+    const idx = +t.dataset.idx;
+    if (whyNot(0, f.where, f.card, idx, G.step)) return;
+    answer({ where: f.where, card: f.card, idx });
+  }
+});
+document.addEventListener('keydown', ev => {
+  if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('.card[data-act]')) { ev.preventDefault(); ev.target.click(); }
+  if (ev.key === 'Escape' && modal && ['view', 'rules'].includes(modal.type)) { modal = null; render(); }
+});
+
+modal = { type: 'setup', leader: 0, deck: loadCustom() ? 'custom' : 'R' };
+renderEmptyBoard();
+function renderEmptyBoard() {
+  $('turnline').textContent = '選好主角與牌組後開始對戰';
+  $('oppHand').innerHTML = Array.from({ length: 5 }, () => backHTML('xs')).join('');
+  ['oppField', 'meField'].forEach(id => ($(id).innerHTML = backHTML('l')));
+  $('axis').innerHTML = '<div class="steps"><span class="step">抽牌</span><span class="step">召喚</span><span class="step">翻開</span><span class="step">先攻行動</span><span class="step">後攻行動</span><span class="step">結算</span></div><div></div><div class="prompt"><div class="tt">準備開局</div></div>';
+  $('inspector').innerHTML = '<h3>操作面板</h3><div class="hint">開始對戰後，點選卡牌會在這裡顯示可以進行的操作。</div>';
+  renderModal();
+}
+
+</script>
