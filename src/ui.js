@@ -67,7 +67,6 @@ function poolText(p) {
 // ---- 主繪製 ----
 function render() {
   if (!G) { renderModal(); return; }
-  $('btnContinue').hidden = !(G && !G.over);
   if (view !== 'battle') { renderModal(); return; }
   const me = P(0), op = P(1);
   const phaseName = { setup: '準備', draw: '抽牌', summon: '召喚', reveal: '翻開', battle: '戰鬥', settle: '結算', end: '回合結束', over: '對局結束' }[G.phase] || '';
@@ -375,7 +374,7 @@ document.addEventListener('click', async ev => {
     try { await navigator.clipboard.writeText(txt); t.textContent = '已複製'; } catch (e) { const r = document.createRange(); r.selectNodeContents($('log')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); t.textContent = '已選取，請按複製'; }
     setTimeout(() => (t.textContent = '複製紀錄'), 1600); return;
   }
-  if (a === 'home') { go('home'); return; }
+  if (a === 'home') { resetBattle(); go('home'); return; }
   if (a === 'battle') { go('battle'); return; }
   if (a === 'go-rules') { homeTab = homeTab === 'rules' ? 'cover' : 'rules'; renderHome(); return; }
   if (a === 'go-dex') { homeTab = homeTab === 'dex' ? 'cover' : 'dex'; renderHome(); return; }
@@ -453,7 +452,6 @@ function go(v) {
   window.scrollTo(0, 0);
 }
 function renderHome() {
-  $('btnContinue').hidden = !(G && !G.over);
   $('mRules').classList.toggle('on', homeTab === 'rules');
   $('mDex').classList.toggle('on', homeTab === 'dex');
   const st = $('homeStage');
@@ -470,6 +468,15 @@ function dexHTML() {
     <div class="dexsec">主角</div><div class="leaders">${LEADERS.map(l => `<div class="leader"><b>${esc(l.name)}</b><small>${l.id}・${l.race}・生命 ${l.hp}・能力：暫無</small></div>`).join('')}</div>`;
 }
 go('home');
+// 回首頁時放棄目前的對局，對戰畫面回到初始狀態
+function resetBattle() {
+  gameId++;            // 讓進行中的對局流程停止（等待中的步驟不會再繼續）
+  G = null; pend = null; modal = null; sel = null; lastLogLen = -1;
+  toasts = []; renderToasts();
+  $('log').innerHTML = ''; $('infoOpp').innerHTML = ''; $('infoMe').innerHTML = '';
+  ['oppConsume', 'meConsume', 'meHand', 'oppPool', 'mePool', 'oppHandN', 'meHandN'].forEach(id => ($(id).innerHTML = ''));
+  renderEmptyBoard();
+}
 function renderEmptyBoard() {
   $('turnline').textContent = '選好主角與牌組後開始對戰';
   $('oppHand').innerHTML = Array.from({ length: 5 }, () => backHTML('xs')).join('');
